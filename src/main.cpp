@@ -34,10 +34,20 @@
 #include "android.h"
 #include "androidmedia.h"
 #endif
+#ifdef Q_OS_WIN
+#include <cstdio>
+#include <cstring>
+#include "winmedia.h"
+#endif
 
 int main(int argc, char *argv[])
 {
-#ifndef Q_OS_ANDROID
+#ifdef Q_OS_WIN
+    attachParentConsole();
+    for (int i = 1; i < argc; ++i)
+        if (!std::strcmp(argv[i], "--version") || !std::strcmp(argv[i], "-v")) { std::printf("musicplayer %s\n", APP_VERSION); return 0; }
+#endif
+#if !defined(Q_OS_ANDROID) && !defined(Q_OS_WIN)
     QQuickWindow::setDefaultAlphaBuffer(true);   // transparent window so the compositor can blur behind it
 #endif
     QGuiApplication app(argc, argv);
@@ -47,14 +57,14 @@ int main(int argc, char *argv[])
     QGuiApplication::setOrganizationName("musicplayer");
     QGuiApplication::setDesktopFileName("musicplayer");   // Wayland app_id / window class
 
-#ifdef Q_OS_ANDROID
-    // phones don't have JetBrains Mono, so the build packs it into the app
+#if defined(Q_OS_ANDROID) || defined(Q_OS_WIN)
+    // phones and most Windows PCs don't have JetBrains Mono, so the build packs it into the app
     const QDir fontDir(QStringLiteral(":/fonts"));
     for (const QString &f : fontDir.entryList({QStringLiteral("*.ttf"), QStringLiteral("*.otf")}, QDir::Files))
         QFontDatabase::addApplicationFont(fontDir.filePath(f));
 #endif
     QFont font;
-    font.setFamilies({"JetBrains Mono", "DejaVu Sans Mono", "monospace"});
+    font.setFamilies({"JetBrains Mono", "DejaVu Sans Mono", "Consolas", "monospace"});
     font.setPixelSize(14);
     QGuiApplication::setFont(font);
 
@@ -95,8 +105,8 @@ int main(int argc, char *argv[])
         settings->insert("boxOpacity", st.value("boxOpacity", 5).toInt());
     }
     const auto refreshTheme = [settings]() {
-#ifdef Q_OS_ANDROID
-        const bool solid = true;
+#if defined(Q_OS_ANDROID) || defined(Q_OS_WIN)
+        const bool solid = true;          // phones and Windows can't blur what is behind the window
 #else
         const bool solid = !settings->value("frosted").toBool();
 #endif
@@ -169,6 +179,9 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_MPRIS
     Mpris mpris(&player);
+#endif
+#ifdef Q_OS_WIN
+    WinMedia winMedia(&player);              // the keyboard's media keys
 #endif
 #ifdef Q_OS_ANDROID
     AndroidMedia androidMedia(&player);      // notification, lock-screen controls and playing with the screen off

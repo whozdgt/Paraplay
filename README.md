@@ -59,7 +59,7 @@ Sidebar → SOURCES → **Add a server…**, or Settings → Servers. Pick Navid
 
 ## Not built yet
 
-Spotify and YouTube Music (greyed out, "soon"), shuffle/repeat, WebDAV / web-folder sources, the "Horizon" lyrics font (JetBrains Mono is used for now), a Windows build.
+Spotify and YouTube Music (greyed out, "soon"), shuffle/repeat, WebDAV / web-folder sources, the "Horizon" lyrics font (JetBrains Mono is used for now).
 
 ## What goes online
 
@@ -114,4 +114,16 @@ This is a summary, not legal advice. Check the licences before distributing bina
 
 ## Windows
 
-The code is portable (libmpv and TagLib exist on Windows; media-key support is Linux-only and skipped automatically). A Windows build is not set up yet.
+Download the newest build from the [windows-latest release](https://github.com/whozdgt/Paraplay/releases/tag/windows-latest): **Paraplay-Setup.exe** installs it for your user (no administrator prompt), or unzip the portable zip anywhere and run `musicplayer.exe`. Windows may say the publisher is unknown the first time, because the files are not code-signed: choose More info, then Run anyway. Tagged releases carry the same two files.
+
+It is the same player: your music folder, playlists, servers, accounts, friends, lyrics and Home page all work. Differences on Windows:
+
+- The window is solid instead of frosted glass (Windows can't blur what is behind a window the way Hyprland can). Pick the background colour in Settings, Theme colours.
+- Media keys (play/pause, next, previous, stop) work, even while another program has the focus. Windows' own volume pop-up does not show the song yet.
+- Output goes through the system mixer (WASAPI shared mode), so "Bit-perfect output" can't change the sample rate Windows uses.
+- To update, download the newer Paraplay-Setup.exe and run it over the old one; your settings stay. The in-app "Update now" button is Linux and Android only for now.
+- The build is for Intel/AMD 64-bit PCs. On a Windows on ARM laptop (Snapdragon) it runs through Windows' built-in emulation.
+
+It is built in GitHub Actions with MSYS2's MinGW toolchain (`.github/workflows/windows.yml`), so building it yourself is: install MSYS2, `pacman -S` the same packages the workflow lists, then `cmake -B build -G Ninja && cmake --build build`.
+
+**Licence note for the Windows download:** it contains mpv and FFmpeg as built by MSYS2 (GPL), Qt and TagLib (LGPL) next to the MIT player. The files `LICENSE.txt` and `THIRD-PARTY.txt` in the download say so, and the source for all of it is public (this repository, and the MSYS2 package sources).

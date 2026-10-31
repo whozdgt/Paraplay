@@ -39,6 +39,13 @@ QVariantList FolderBrowser::roots() const
         if (r.startsWith(QLatin1String("/storage/")) && !r.startsWith(QLatin1String("/storage/emulated")) && v.isValid() && v.isReady())
             add(v.displayName().isEmpty() ? QStringLiteral("SD card") : v.displayName(), r);
     }
+#elif defined(Q_OS_WIN)
+    add(QStringLiteral("Music"), QStandardPaths::writableLocation(QStandardPaths::MusicLocation));
+    add(QStringLiteral("Home"), QDir::homePath());
+    for (const QFileInfo &d : QDir::drives()) {
+        const QString r = d.absoluteFilePath();
+        add(QStringLiteral("Drive ") + r.left(2), r);
+    }
 #else
     add(QStringLiteral("Music"), QStandardPaths::writableLocation(QStandardPaths::MusicLocation));
     add(QStringLiteral("Home"), QDir::homePath());

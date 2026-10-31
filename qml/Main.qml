@@ -10,9 +10,10 @@ Window {
     minimumHeight: android ? 0 : 520
     visible: true
     title: "Music"
-    color: android ? settings.bgColor : "transparent"     // phones can't blur what is behind the window
+    color: opaque ? settings.bgColor : "transparent"     // phones and Windows can't blur what is behind the window
 
     readonly property bool android: Qt.platform.os === "android"
+    readonly property bool opaque: android || Qt.platform.os === "windows"
     readonly property bool phone: width < 720             // one column, menu slides in from the left
     readonly property int gutter: phone ? 16 : 36
     // where the page content starts: below the title, and below the row of buttons (sort, source…) when there is one
@@ -131,8 +132,8 @@ Window {
 
     Rectangle {
         anchors.fill: parent
-        color: (settings.frosted && !win.android) ? Qt.rgba(1, 1, 1, 0.58) : settings.bgColor
-        border.width: win.android ? 0 : 1
+        color: (settings.frosted && !win.opaque) ? Qt.rgba(1, 1, 1, 0.58) : settings.bgColor
+        border.width: win.opaque ? 0 : 1
         border.color: Qt.rgba(1, 1, 1, 0.75)
 
         Shape {

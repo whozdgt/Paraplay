@@ -238,7 +238,7 @@ Rectangle {
                 ColumnLayout {
                     width: parent.width
                     visible: root.cat === "customisation"
-                    ToggleRow { label: "Frosted glass"; checked: settings.frosted; onToggled: settings.frosted = !settings.frosted }
+                    ToggleRow { visible: Qt.platform.os === "linux"; label: "Frosted glass"; checked: settings.frosted; onToggled: settings.frosted = !settings.frosted }
                     ToggleRow { label: "Adapt to album colours"; checked: settings.adaptive; onToggled: settings.adaptive = !settings.adaptive }
                     ToggleRow { label: "Show lyrics"; checked: settings.lyrics; onToggled: settings.lyrics = !settings.lyrics }
                     ToggleRow { label: "Look up lyrics online"; note: "For songs without lyrics of their own, sends the artist, title and length to lrclib.net. Found lyrics are kept on this device"; checked: settings.onlineLyrics; onToggled: settings.onlineLyrics = !settings.onlineLyrics }
@@ -344,7 +344,7 @@ Rectangle {
                     visible: root.cat === "theme"
                     ColorEditor { title: "Primary"; value: settings.primary; onEdited: (c) => settings.primary = c }
                     ColorEditor { title: "Accent"; value: settings.accent; onEdited: (c) => settings.accent = c }
-                    ColorEditor { visible: !settings.frosted; title: "Background (frosted glass off)"; value: settings.bgColor; onEdited: (c) => settings.bgColor = c }
+                    ColorEditor { visible: settings.solid; title: Qt.platform.os === "linux" ? "Background (frosted glass off)" : "Background"; value: settings.bgColor; onEdited: (c) => settings.bgColor = c }
                     SectionLabel { visible: settings.solid; text: "SELECTION AND BOXES" }
                     Text {
                         visible: settings.solid
@@ -397,8 +397,9 @@ Rectangle {
                     Text {
                         visible: updater.available && !updater.canInstall
                         Layout.fillWidth: true; wrapMode: Text.Wrap; font.pixelSize: 10; lineHeight: 1.4; color: root.muted
-                        text: updater.configured ? "To update from inside the player, install it once with ./update.sh --here from the project folder."
-                                                 : "This build isn't linked to a release page yet."
+                        text: !updater.configured ? "This build isn't linked to a release page yet."
+                            : Qt.platform.os === "windows" ? "Download the new installer from the release page and run it. Your settings and library stay as they are."
+                            : "To update from inside the player, install it once with ./update.sh --here from the project folder."
                     }
                     Rectangle {
                         visible: updater.installing && Qt.platform.os === "android"

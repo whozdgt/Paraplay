@@ -1,5 +1,6 @@
 #include "player.h"
 
+#include <QCoreApplication>
 #include <QDebug>
 #include <QFile>
 #include <QFileInfo>
@@ -172,6 +173,12 @@ Player::Player(Library *lib, bool bitPerfect, bool matchRate, QObject *parent)
     o("ao", "pipewire,pulse,alsa");
 #endif
     // https streams from your own server: check certificates against the system's list of authorities.
+#ifdef Q_OS_WIN
+    {   // Windows has no such file: the installer puts one next to the program
+        const QByteArray bundled = (QCoreApplication::applicationDirPath() + QStringLiteral("/ca-bundle.crt")).toUtf8();
+        if (QFileInfo::exists(QString::fromUtf8(bundled))) o("tls-ca-file", bundled.constData());
+    }
+#endif
     for (const char *ca : {"/etc/ssl/certs/ca-certificates.crt", "/etc/pki/tls/certs/ca-bundle.crt", "/etc/ssl/cert.pem"})
         if (QFileInfo::exists(QLatin1String(ca))) { o("tls-ca-file", ca); break; }
     o("tls-verify", "yes");

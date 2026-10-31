@@ -1,0 +1,175 @@
+name: windows
+
+# Builds the Windows version of the player (Intel/AMD 64-bit; it also runs on Windows on ARM laptops, emulated).
+#  - every push to main and every pull request: builds it and keeps the installer and a portable zip for 14 days
+#    (open the run, scroll to "Artifacts")
+#  - a version tag like v0.7.0: also attaches both files to that release
+#  - every push to main: publishes them as the "windows-latest" pre-release, so there is always one place to
+#    download the newest Windows build from.
+#
+# The program is built with MSYS2's MinGW toolchain, the same Qt 6, mpv and TagLib the Linux build uses.
+# The files are not code-signed, so Windows SmartScreen shows "unknown publisher" the first time (More info > Run anyway).
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths: ['src/**', 'qml/**', 'CMakeLists.txt', 'packaging/**', '.github/workflows/windows.yml']
+  pull_request:
+    paths: ['src/**', 'qml/**', 'CMakeLists.txt', 'packaging/**', '.github/workflows/windows.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write      # to attach the files to a release
+
+env:
+  FONT_URL: https://github.com/JetBrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-pkgconf mingw-w64-ucrt-x86_64-qt6-base mingw-w64-ucrt-x86_64-qt6-declarative
+            mingw-w64-ucrt-x86_64-qt6-svg mingw-w64-ucrt-x86_64-qt6-shadertools mingw-w64-ucrt-x86_64-qt6-tools
+            mingw-w64-ucrt-x86_64-mpv mingw-w64-ucrt-x86_64-taglib
+            curl unzip zip
+
+      - name: JetBrains Mono (the player's font)
+        continue-on-error: true
+        run: |
+          mkdir -p fonts
+          curl -fsSL "$FONT_URL" -o jbm.zip
+          unzip -o -j jbm.zip 'fonts/ttf/JetBrainsMono-*.ttf' -d fonts
+          ls fonts
+
+      - name: Configure and build
+        run: |
+          set +e
+          {
+            cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DWINDOWS_FONT_DIR="$PWD/fonts" &&
+            cmake --build build -j"$(nproc)"
+          } 2>&1 | tee build.log
+          rc=${PIPESTATUS[0]}
+          if [ "$rc" -ne 0 ]; then
+            # put the useful lines where the Actions API shows them (the full log needs a sign-in)
+            esc() { sed -e 's/%/%25/g' | awk '{printf "%s%%0A", substr($0,1,300)}'; }
+            msg="$(grep -n -i -E 'error|undefined|FAILED|not found|could not|fatal' build.log | head -25 | esc)"
+            echo "::error title=build errors::${msg}"
+            msg="$(tail -n 25 build.log | esc)"
+            echo "::error title=end of build log::${msg}"
+          fi
+          exit "$rc"
+
+      - name: Gather the program and everything it needs
+        run: |
+          set +e
+          esc() { sed -e 's/%/%25/g' | awk '{printf "%s%%0A", substr($0,1,300)}'; }
+          fail() { echo "::error title=$1::$(tail -n 25 deploy.log | esc)"; exit 1; }
+          mkdir -p dist
+          cp build/musicplayer.exe dist/
+          dq="$(command -v windeployqt6 || command -v windeployqt-qt6 || command -v windeployqt)"
+          echo "using: $dq" | tee deploy.log
+          "$dq" --release --no-translations --dir dist --qmldir qml dist/musicplayer.exe >> deploy.log 2>&1 || fail "windeployqt failed"
+          # tell Qt where the plugins and QML modules are (the MSYS2 layout differs from the usual one)
+          printf '[Paths]\nPrefix = .\nPlugins = plugins\nQmlImports = qml\n' > dist/qt.conf
+          # windeployqt only knows Qt's own libraries: add what mpv, TagLib and the rest need (repeat: plugins need things too)
+          for round in 1 2 3; do
+            find dist \( -name '*.dll' -o -name '*.exe' \) -print0 | xargs -0 -n1 ldd 2>/dev/null |
+              awk '$3 ~ /^\/ucrt64\// {print $3}' | sort -u | while read -r dll; do
+                [ -f "dist/$(basename "$dll")" ] || cp "$dll" dist/
+              done
+          done
+          # https streams from your own server are checked against this list of authorities
+          curl -fsSL https://curl.se/ca/cacert.pem -o dist/ca-bundle.crt || echo "no CA bundle"
+          cp LICENSE dist/LICENSE.txt
+          printf 'Paraplay is MIT licensed. This Windows build also contains mpv/FFmpeg (GPL), Qt (LGPL) and TagLib (LGPL).\nSource: https://github.com/whozdgt/Paraplay and the MSYS2 packages mingw-w64-ucrt-x86_64-{mpv,ffmpeg,qt6-base,taglib}.\n' > dist/THIRD-PARTY.txt
+          echo "files: $(find dist -type f | wc -l), size: $(du -sh dist | cut -f1)" | tee -a deploy.log
+          ls dist | head -80
+
+      - name: Starts and the window comes up
+        run: |
+          set +e
+          esc() { sed -e 's/%/%25/g' | awk '{printf "%s%%0A", substr($0,1,300)}'; }
+          cd dist
+          ./musicplayer.exe --version || { echo "::error title=does not start::the program did not run --version"; exit 1; }
+          # a real start, with software drawing so no graphics card is needed; it must still be running after 12 seconds
+          export QT_FORCE_STDERR_LOGGING=1 QT_ASSUME_STDERR_HAS_CONSOLE=1 QT_QUICK_BACKEND=software
+          timeout 12 ./musicplayer.exe --music "$TEMP" > ../ui.log 2>&1
+          rc=$?
+          cat ../ui.log | head -60
+          if [ "$rc" -ne 124 ]; then
+            echo "::error title=closed on its own (exit $rc)::$(tail -n 25 ../ui.log | esc)"
+            exit 1
+          fi
+          if grep -E "(qrc:|qml).*(error|Error|is not a type|Cannot assign|ReferenceError|TypeError)" ../ui.log; then
+            echo "::warning title=interface errors::$(grep -E '(qrc:|qml).*(error|Error|is not a type|Cannot assign|ReferenceError|TypeError)' ../ui.log | head -20 | esc)"
+          fi
+
+      - name: Portable zip
+        run: |
+          ver="$(sed -n 's/^project(musicplayer VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)"
+          echo "VER=$ver" >> "$GITHUB_ENV"
+          mv dist Paraplay
+          zip -qr "Paraplay-${ver}-windows-x64.zip" Paraplay
+          mv Paraplay dist
+          ls -l Paraplay-*.zip
+
+      - name: Installer
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress | Out-Null
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          & $iscc "/DAppVersion=${env:VER}" "/DDistDir=$PWD\dist" "/DOutDir=$PWD" "packaging\windows\paraplay.iss"
+          if ($LASTEXITCODE -ne 0) { Write-Host "::error title=installer::Inno Setup failed"; exit 1 }
+          Get-ChildItem Paraplay-Setup.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Paraplay-windows
+          path: |
+            Paraplay-Setup.exe
+            Paraplay-*-windows-x64.zip
+          retention-days: 14
+
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # the release workflow creates the release a moment after the tag; wait for it
+          for i in $(seq 1 30); do
+            gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1 && break
+            sleep 10
+          done
+          gh release upload "$GITHUB_REF_NAME" Paraplay-Setup.exe "Paraplay-${VER}-windows-x64.zip" --clobber
+
+      # The rolling "windows-latest" pre-release (a pre-release never counts as the desktop's "latest release").
+      - name: Publish as the newest build
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ github.run_number }}
+        run: |
+          sha="$(sha256sum Paraplay-Setup.exe | cut -d' ' -f1)"
+          # a slower, older run must not replace a newer build
+          cur="$(curl -fsSL "https://github.com/${GITHUB_REPOSITORY}/releases/download/windows-latest/latest.json" 2>/dev/null | sed -n 's/.*"build": *\([0-9]*\).*/\1/p' | head -1 || true)"
+          [[ "$cur" =~ ^[0-9]+$ ]] || cur=0
+          if [ "$cur" -ge "$RUN" ]; then echo "Build $cur is already published; skipping build $RUN."; exit 0; fi
+          printf '{"build": %s, "version": "%s", "sha256": "%s"}\n' "$RUN" "$VER" "$sha" > latest.json
+          cat latest.json
+          gh release delete windows-latest --cleanup-tag --yes || true
+          gh release create windows-latest Paraplay-Setup.exe "Paraplay-${VER}-windows-x64.zip" latest.json \
+            --prerelease --target "$GITHUB_SHA" \
+            --title "Paraplay for Windows: newest build" \
+            --notes "Build ${RUN} (version ${VER}). Download Paraplay-Setup.exe and run it, or unzip the portable zip anywhere. Windows may say the publisher is unknown the first time: choose More info, then Run anyway."
