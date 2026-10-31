@@ -3,6 +3,7 @@ import QtQuick.Layouts
 
 Flickable {
     id: root
+    readonly property int gut: width < 600 ? 16 : 36      // side margin; smaller on a phone
     signal signInRequested()
     signal imageRequested(string kind)      // "avatar" or "banner"
     contentWidth: width
@@ -35,8 +36,8 @@ Flickable {
 
     ColumnLayout {
         id: col
-        x: 36
-        width: Math.min(560, root.width - 72)
+        x: root.gut
+        width: Math.min(560, root.width - 2 * root.gut)
         spacing: 0
 
         ColumnLayout {

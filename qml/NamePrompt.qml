@@ -11,7 +11,7 @@ Item {
     MouseArea { anchors.fill: parent; onClicked: root.cancelled() }
     Rectangle {
         anchors.centerIn: parent
-        width: 380
+        width: Math.min(380, root.width - 24)
         height: 170
         color: Qt.rgba(1, 1, 1, 0.94)
         MouseArea { anchors.fill: parent }

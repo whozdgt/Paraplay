@@ -6,6 +6,7 @@ Rectangle {
     signal close()
     signal addServerRequested()
     property string cat: "customisation"
+    readonly property bool compact: width < 560      // phone: the sections become a row of tabs along the top
     property string confirmId: ""          // server whose Remove button is waiting for a second press
     readonly property color pri: settings.primary
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
@@ -30,11 +31,43 @@ Rectangle {
         return sv.count > 0 ? sv.count + " songs (saved copy)" : "Waiting…"
     }
 
-    color: Qt.rgba(1, 1, 1, 0.85)
+    color: compact ? settings.bgColor : Qt.rgba(1, 1, 1, 0.85)
     MouseArea { anchors.fill: parent }   // clicks inside must not reach the close-overlay
+
+    Flickable {
+        id: tabStrip
+        visible: root.compact
+        anchors { left: parent.left; right: parent.right; top: parent.top }
+        height: root.compact ? 48 : 0
+        contentWidth: tabRow.width
+        contentHeight: height
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        Row {
+            id: tabRow
+            leftPadding: 8
+            Repeater {
+                model: root.cats
+                Item {
+                    required property var modelData
+                    readonly property bool on: root.cat === modelData.k
+                    width: tabLabel.implicitWidth + 28
+                    height: 48
+                    Text { id: tabLabel; anchors.centerIn: parent; text: parent.modelData.t; font.pixelSize: 13; font.weight: parent.on ? Font.DemiBold : Font.Normal; color: root.pri }
+                    Rectangle {
+                        anchors.bottom: parent.bottom; width: parent.width
+                        height: parent.on ? 3 : 1
+                        color: parent.on ? settings.accent : Qt.rgba(0, 0, 0, 0.12)
+                    }
+                    MouseArea { anchors.fill: parent; onClicked: root.cat = parent.modelData.k }
+                }
+            }
+        }
+    }
 
     Column {
         id: nav
+        visible: !root.compact
         width: 170
         height: parent.height
         topPadding: 20
@@ -51,10 +84,10 @@ Rectangle {
             }
         }
     }
-    Rectangle { x: nav.width; width: 1; height: parent.height; color: Qt.rgba(0, 0, 0, 0.08) }
+    Rectangle { visible: !root.compact; x: nav.width; width: 1; height: parent.height; color: Qt.rgba(0, 0, 0, 0.08) }
 
     Item {
-        anchors { left: nav.right; right: parent.right; top: parent.top; bottom: parent.bottom; margins: 20 }
+        anchors { left: root.compact ? parent.left : nav.right; right: parent.right; top: root.compact ? tabStrip.bottom : parent.top; bottom: parent.bottom; margins: root.compact ? 14 : 20 }
         RowLayout {
             id: head
             width: parent.width

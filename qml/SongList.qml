@@ -8,6 +8,7 @@ ListView {
     model: library
     reuseItems: true
     boundsBehavior: Flickable.StopAtBounds
+    readonly property bool compact: width < 560      // phone: title over artist, no quality column
     readonly property color pri: settings.primary
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
 
@@ -32,16 +33,25 @@ ListView {
             anchors { fill: parent; leftMargin: 14; rightMargin: 14 }
             spacing: 0
             Text {
+                visible: !list.compact
                 Layout.fillWidth: true; Layout.preferredWidth: 100
                 text: row.title; elide: Text.ElideRight; font.pixelSize: 14; font.weight: Font.Medium; color: list.pri
             }
             Text {
+                visible: !list.compact
                 Layout.fillWidth: true; Layout.preferredWidth: 100
                 text: row.artist; elide: Text.ElideRight; font.pixelSize: 14; color: list.muted
             }
+            ColumnLayout {
+                visible: list.compact
+                Layout.fillWidth: true; Layout.preferredWidth: 100
+                spacing: 2
+                Text { Layout.fillWidth: true; text: row.title; elide: Text.ElideRight; font.pixelSize: 14; font.weight: Font.Medium; color: list.pri }
+                Text { Layout.fillWidth: true; text: row.artist; elide: Text.ElideRight; font.pixelSize: 12; color: list.muted }
+            }
             Item {
                 Layout.preferredWidth: 100; Layout.preferredHeight: 20
-                visible: settings.badges
+                visible: settings.badges && !list.compact
                 Rectangle { visible: row.hires; width: 3; height: parent.height; color: settings.accent }
                 Text {
                     x: 8; anchors.verticalCenter: parent.verticalCenter
@@ -64,6 +74,7 @@ ListView {
                 if (m.button === Qt.RightButton) { const p = row.mapToItem(null, m.x, m.y); list.menuRequested(row.path, p.x, p.y) }
                 else player.playRow(row.index)
             }
+            onPressAndHold: (m) => { const p = row.mapToItem(null, m.x, m.y); list.menuRequested(row.path, p.x, p.y) }   // touch screens
         }
     }
 

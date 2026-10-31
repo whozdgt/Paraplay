@@ -1,8 +1,11 @@
 #include <clocale>
+#include <memory>
 
 #include <QColor>
 #include <QCommandLineParser>
+#include <QDir>
 #include <QFont>
+#include <QFontDatabase>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -10,6 +13,7 @@
 #include <QQuickWindow>
 #include <QSettings>
 #include <QStandardPaths>
+#include <QTimer>
 
 #include "account.h"
 #include "artistimages.h"
@@ -23,10 +27,15 @@
 #ifdef HAVE_MPRIS
 #include "mpris.h"
 #endif
+#ifdef Q_OS_ANDROID
+#include "android.h"
+#endif
 
 int main(int argc, char *argv[])
 {
+#ifndef Q_OS_ANDROID
     QQuickWindow::setDefaultAlphaBuffer(true);   // transparent window so the compositor can blur behind it
+#endif
     QGuiApplication app(argc, argv);
     std::setlocale(LC_NUMERIC, "C");              // libmpv requires this, otherwise mpv_create() fails
     QGuiApplication::setApplicationName("musicplayer");
@@ -34,6 +43,12 @@ int main(int argc, char *argv[])
     QGuiApplication::setOrganizationName("musicplayer");
     QGuiApplication::setDesktopFileName("musicplayer");   // Wayland app_id / window class
 
+#ifdef Q_OS_ANDROID
+    // phones don't have JetBrains Mono, so the build packs it into the app
+    const QDir fontDir(QStringLiteral(":/fonts"));
+    for (const QString &f : fontDir.entryList({QStringLiteral("*.ttf"), QStringLiteral("*.otf")}, QDir::Files))
+        QFontDatabase::addApplicationFont(fontDir.filePath(f));
+#endif
     QFont font;
     font.setFamilies({"JetBrains Mono", "DejaVu Sans Mono", "monospace"});
     font.setPixelSize(14);
@@ -113,7 +128,23 @@ int main(int argc, char *argv[])
 #ifdef HAVE_MPRIS
     Mpris mpris(&player);
 #endif
+#ifdef Q_OS_ANDROID
+    // Reading the music folder needs the user's OK. Ask, then scan as soon as they say yes.
+    if (android::audioAllowed()) {
+        library.scan(dir);
+    } else {
+        android::askForAudio();
+        auto *wait = new QTimer(&app);
+        auto tries = std::make_shared<int>(0);
+        QObject::connect(wait, &QTimer::timeout, &app, [&, wait, tries]() {
+            if (android::audioAllowed()) { wait->stop(); library.scan(settings->value("musicDir").toString()); }
+            else if (++*tries > 240) wait->stop();      // gave up after about two minutes
+        });
+        wait->start(500);
+    }
+#else
     library.scan(dir);
+#endif
     updater.checkOnStart(settings->value("autoUpdateCheck").toBool());
     return app.exec();
 }

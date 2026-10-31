@@ -3,6 +3,7 @@ import QtQuick
 // "Preview" on your own profile page: the same screen a stranger gets, built from what is saved.
 Item {
     id: root
+    readonly property int gut: width < 600 ? 16 : 36      // side margin; smaller on a phone
     property bool dirty: false      // the Edit page has changes that are not saved yet
     readonly property string sig: [account.visibility, account.showCounts, account.showPlaylists, account.listeningPublic,
                                    account.displayName, account.bio, account.avatarUrl, account.bannerUrl].join("|")
@@ -13,8 +14,8 @@ Item {
 
     Rectangle {
         id: strip
-        x: 36
-        width: parent.width - 72
+        x: root.gut
+        width: parent.width - 2 * root.gut
         height: 28
         color: settings.primary
         Text {

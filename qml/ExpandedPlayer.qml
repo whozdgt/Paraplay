@@ -4,6 +4,8 @@ import QtQuick.Layouts
 Item {
     id: root
     signal collapse()
+    readonly property bool phone: width < 720          // lyrics move out of the way on a phone
+    readonly property real availW: (settings.lyrics && !phone) ? width - 380 : width
     readonly property color pri: settings.primary
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
 
@@ -15,13 +17,13 @@ Item {
 
     ColumnLayout {
         id: center
-        x: ((settings.lyrics ? root.width - 380 : root.width) - width) / 2
+        x: (root.availW - width) / 2
         anchors.verticalCenter: parent.verticalCenter
         spacing: 26
 
         Cover {
             Layout.alignment: Qt.AlignHCenter
-            Layout.preferredWidth: Math.max(160, Math.min(300, root.height - 340))
+            Layout.preferredWidth: Math.max(140, Math.min(300, root.height - 340, root.availW - 64))
             Layout.preferredHeight: Layout.preferredWidth
             source: player.coverSource
             record: settings.recordCover
@@ -30,8 +32,8 @@ Item {
         ColumnLayout {
             Layout.alignment: Qt.AlignHCenter
             spacing: 6
-            Text { Layout.alignment: Qt.AlignHCenter; text: player.hasTrack ? player.title : "Nothing playing"; font.pixelSize: 26; font.weight: Font.DemiBold; color: root.pri }
-            Text { Layout.alignment: Qt.AlignHCenter; text: player.artist; font.pixelSize: 15; color: root.muted }
+            Text { Layout.alignment: Qt.AlignHCenter; Layout.maximumWidth: root.availW - 40; elide: Text.ElideRight; text: player.hasTrack ? player.title : "Nothing playing"; font.pixelSize: root.phone ? 22 : 26; font.weight: Font.DemiBold; color: root.pri }
+            Text { Layout.alignment: Qt.AlignHCenter; Layout.maximumWidth: root.availW - 40; elide: Text.ElideRight; text: player.artist; font.pixelSize: 15; color: root.muted }
             Rectangle {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.topMargin: 6
@@ -49,7 +51,7 @@ Item {
                 }
             }
         }
-        Progress { Layout.preferredWidth: 440; Layout.alignment: Qt.AlignHCenter }
+        Progress { Layout.preferredWidth: Math.min(440, root.availW - 48); Layout.alignment: Qt.AlignHCenter }
         Row {
             Layout.alignment: Qt.AlignHCenter
             spacing: 28
@@ -58,6 +60,7 @@ Item {
             IconButton { name: "next"; box: 44; iconSize: 22; onClicked: player.next() }
         }
         RowLayout {
+            visible: Qt.platform.os !== "android"        // phones have volume keys
             Layout.alignment: Qt.AlignHCenter
             spacing: 10
             Icon { name: "volume"; size: 20; color: root.pri }
@@ -68,7 +71,7 @@ Item {
 
     Item {
         id: lyr
-        visible: settings.lyrics
+        visible: settings.lyrics && !root.phone
         width: 340
         anchors { right: parent.right; rightMargin: 48; top: parent.top; topMargin: 88; bottom: parent.bottom; bottomMargin: 72 }
         Column {

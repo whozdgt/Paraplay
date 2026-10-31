@@ -4,6 +4,7 @@ import QtQuick.Layouts
 // The Friends hub: what people you follow are playing, finding people, and follow requests.
 Item {
     id: root
+    readonly property int gut: width < 600 ? 16 : 36      // side margin; smaller on a phone
     signal signInRequested()
     signal openUser(string username)
     signal openPlaylist(string pid, string name, string owner)
@@ -19,8 +20,8 @@ Item {
     // ---- signed out ----
     Column {
         visible: !root.signedIn
-        x: 36
-        width: Math.min(480, root.width - 72)
+        x: root.gut
+        width: Math.min(480, root.width - 2 * root.gut)
         spacing: 14
         Text {
             width: parent.width
@@ -37,8 +38,8 @@ Item {
     Item {
         id: body
         visible: root.signedIn
-        x: 36
-        width: root.width - 72
+        x: root.gut
+        width: root.width - 2 * root.gut
         height: root.height
 
         Row {

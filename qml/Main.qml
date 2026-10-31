@@ -6,11 +6,24 @@ Window {
     id: win
     width: 1040
     height: 640
-    minimumWidth: 860
-    minimumHeight: 520
+    minimumWidth: android ? 0 : 860
+    minimumHeight: android ? 0 : 520
     visible: true
     title: "Music"
-    color: "transparent"
+    color: android ? settings.bgColor : "transparent"     // phones can't blur what is behind the window
+
+    readonly property bool android: Qt.platform.os === "android"
+    readonly property bool phone: width < 720             // one column, menu slides in from the left
+    readonly property int gutter: phone ? 16 : 36
+    // where the page content starts: below the title, and below the row of buttons (sort, source…) when there is one
+    readonly property real contentTop: phone ? 56 + (chips.height > 0 ? chips.height + 12 : 4) : 90
+    property bool drawerOpen: false
+
+    Item {      // Android's Back key lands here when nothing else has the keyboard
+        anchors.fill: parent
+        focus: true
+        Keys.onBackPressed: (e) => { e.accepted = win.handleBack() }
+    }
 
     property bool expanded: false
     property bool settingsOpen: false
@@ -42,13 +55,38 @@ Window {
     Behavior on glowA { ColorAnimation { duration: 700 } }
     Behavior on glowB { ColorAnimation { duration: 700 } }
 
+    function groupView(v) {
+        if (v === "albums") return phone ? albumGrid : albumFlow
+        if (v === "artists") return phone ? artistGrid : artistFlow
+        return phone ? playlistGrid : playlistFlow
+    }
+    // The phone's Back button / swipe: close the top-most thing, or go up one level. False = nothing left to close.
+    function handleBack() {
+        if (addServerOpen) { addServerOpen = false; return true }
+        if (authOpen) { authOpen = false; return true }
+        if (imagePopup.visible) { imagePopup.visible = false; return true }
+        if (prompt.visible) { prompt.visible = false; return true }
+        if (menuPath !== "") { menuPath = ""; return true }
+        if (sourceOpen || sortOpen) { sourceOpen = false; sortOpen = false; return true }
+        if (drawerOpen) { drawerOpen = false; return true }
+        if (searchOpen) { searchOpen = false; return true }
+        if (settingsOpen) { settingsOpen = false; return true }
+        if (expanded) { expanded = false; return true }
+        if (view === "user" || view === "friendpl") { back(); return true }
+        if (library.filterKind !== "") { goto(backView || "songs"); return true }
+        if (view !== "songs") { goto("songs"); return true }
+        return false
+    }
+    onClosing: (close) => { if (android && handleBack()) close.accepted = false }
+
     function pick(kind, key, label) {
         searchOpen = false
+        drawerOpen = false
         library.setFilter(kind, key, label)
         backView = kind + "s"
         view = "songs"
     }
-    function goto(v) { library.clearFilter(); searchOpen = false; backView = ""; view = v }
+    function goto(v) { library.clearFilter(); searchOpen = false; drawerOpen = false; backView = ""; view = v }
     function openUser(name) { searchOpen = false; social.openProfile(name, false); view = "user" }
     function openFriendPlaylist(pid, name, owner, fromUser) {
         searchOpen = false
@@ -62,6 +100,7 @@ Window {
     }
     function openPlaylist(key, name) {
         searchOpen = false
+        drawerOpen = false
         currentPlaylist = key
         library.setPlaylistFilter(key, name, playlists.paths(key))
         backView = "playlists"
@@ -70,8 +109,8 @@ Window {
 
     Rectangle {
         anchors.fill: parent
-        color: settings.frosted ? Qt.rgba(1, 1, 1, 0.58) : settings.bgColor
-        border.width: 1
+        color: (settings.frosted && !win.android) ? Qt.rgba(1, 1, 1, 0.58) : settings.bgColor
+        border.width: win.android ? 0 : 1
         border.color: Qt.rgba(1, 1, 1, 0.75)
 
         Shape {
@@ -116,40 +155,56 @@ Window {
         anchors.fill: parent
         visible: !win.expanded
 
+        Rectangle {      // dims the page while the menu is out
+            z: 33
+            anchors.fill: parent
+            color: "black"
+            opacity: win.phone && win.drawerOpen ? 0.35 : 0
+            visible: opacity > 0
+            Behavior on opacity { NumberAnimation { duration: 150 } }
+            MouseArea { anchors.fill: parent; onClicked: win.drawerOpen = false }
+        }
         Sidebar {
             id: side
-            width: 230
-            anchors { top: parent.top; bottom: parent.bottom; left: parent.left }
+            z: 35
+            drawer: win.phone
+            width: win.phone ? Math.min(300, win.width * 0.84) : 230
+            x: win.phone && !win.drawerOpen ? -width : 0
+            visible: !win.phone || x > -width
+            Behavior on x { enabled: win.phone; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+            anchors { top: parent.top; bottom: parent.bottom }
             view: win.view
             onSelect: (v) => win.goto(v)
-            onProfileClicked: { if (account.signedIn) win.goto("profile"); else win.authOpen = true }
+            onProfileClicked: { win.drawerOpen = false; if (account.signedIn) win.goto("profile"); else win.authOpen = true }
             onSourceSelected: (id) => {
+                win.drawerOpen = false
                 library.source = id
                 if (win.view === "profile" || win.view === "playlists" || win.view === "friends" || win.view === "user" || win.view === "friendpl") win.goto("songs")
             }
-            onAddServerRequested: win.addServerOpen = true
-            onUpdateClicked: { settingsPanel.cat = "updates"; win.settingsOpen = true }
+            onAddServerRequested: { win.drawerOpen = false; win.addServerOpen = true }
+            onUpdateClicked: { win.drawerOpen = false; settingsPanel.cat = "updates"; win.settingsOpen = true }
         }
 
         Item {
-            anchors { left: side.right; right: parent.right; top: parent.top; bottom: bar.top; bottomMargin: 12 }
+            anchors { left: win.phone ? parent.left : side.right; right: parent.right; top: parent.top; bottom: bar.top; bottomMargin: 12 }
 
-            Row {
-                id: heading
-                x: 36; y: 26
+            Text {
+                id: title
                 z: 5
-                spacing: 12
-                Text {
+                x: win.gutter + (win.phone ? 44 : 0)      // phone: the menu button sits to its left
+                y: win.phone ? 12 : 26
+                height: win.phone ? 32 : implicitHeight
+                verticalAlignment: Text.AlignVCenter
                     text: win.view === "friends" ? "Friends"
                         : win.view === "user" ? "‹ " + (social.profile.name || social.profile.username || "Profile")
                         : win.view === "friendpl" ? "‹ " + (social.playlist.name || "Playlist")
                         : library.filterKind !== "" ? "‹ " + library.filterName
                         : (win.view === "albums" ? "Albums" : win.view === "artists" ? "Artists" : win.view === "playlists" ? "Playlists" : win.view === "profile" ? "Profile" : "Songs")
-                    font.pixelSize: 28
+                    font.pixelSize: win.phone ? 20 : 28
                     font.weight: Font.DemiBold
                     color: win.pri
                     elide: Text.ElideRight
-                    width: Math.min(implicitWidth, parent.parent.width - 140)
+                    width: Math.min(implicitWidth, win.phone ? parent.width - x - 104 : parent.width - 140)
                     MouseArea {
                         anchors.fill: parent
                         enabled: library.filterKind !== "" || win.view === "user" || win.view === "friendpl"
@@ -157,6 +212,12 @@ Window {
                         onClicked: { if (win.view === "user" || win.view === "friendpl") win.back(); else win.goto(win.backView || "songs") }
                     }
                 }
+            Row {      // sort, source, share…: beside the title on a computer, under it on a phone
+                id: chips
+                z: 5
+                spacing: 12
+                x: win.phone ? win.gutter : title.x + title.width + 12
+                y: win.phone ? title.y + title.height + 12 : title.y + (title.height - height) / 2
                 Item {   // sort button, next to the "Songs" heading
                     visible: win.view === "songs" && library.filterKind === ""
                     height: 36
@@ -271,58 +332,85 @@ Window {
                 id: profilePage
                 visible: win.view === "profile"
                 editing: win.profileMode === "edit"
-                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: 90 }
+                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: win.contentTop }
                 onSignInRequested: win.authOpen = true
                 onImageRequested: (kind) => { imagePopup.kind = kind; imagePopup.visible = true }
             }
             ProfilePreview {
                 visible: win.view === "profile" && win.profileMode === "preview" && account.signedIn
                 dirty: profilePage.dirty
-                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: 90 }
+                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: win.contentTop }
             }
             FriendsPage {
                 visible: win.view === "friends"
-                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: 90 }
+                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: win.contentTop }
                 onSignInRequested: win.authOpen = true
                 onOpenUser: (username) => win.openUser(username)
                 onOpenPlaylist: (pid, name, owner) => win.openFriendPlaylist(pid, name, owner, false)
             }
             PublicProfile {
                 visible: win.view === "user"
-                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: 90 }
+                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: win.contentTop }
                 onOpenPlaylist: (pid, name, owner) => win.openFriendPlaylist(pid, name, owner, true)
             }
             FriendPlaylist {
                 visible: win.view === "friendpl"
-                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: 90 }
+                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: win.contentTop }
             }
             SongList {
                 visible: win.view === "songs"
                 onMenuRequested: (path, gx, gy) => { win.menuPath = path; win.menuX = gx; win.menuY = gy }
-                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: 90 }
+                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: win.contentTop }
+            }
+            Groups {
+                id: albumGrid
+                kind: "album"
+                active: win.phone && win.view === "albums"
+                visible: active
+                anchors { left: parent.left; leftMargin: 8; right: parent.right; rightMargin: 8; top: parent.top; bottom: parent.bottom; topMargin: win.contentTop }
+                onPicked: (key, name) => win.pick("album", key, name)
+            }
+            Groups {
+                id: artistGrid
+                kind: "artist"
+                active: win.phone && win.view === "artists"
+                visible: active
+                anchors { left: parent.left; leftMargin: 8; right: parent.right; rightMargin: 8; top: parent.top; bottom: parent.bottom; topMargin: win.contentTop }
+                onPicked: (key, name) => win.pick("artist", key, name)
+            }
+            Groups {
+                id: playlistGrid
+                kind: "playlist"
+                active: win.phone && win.view === "playlists"
+                visible: active
+                anchors { left: parent.left; leftMargin: 8; right: parent.right; rightMargin: 8; top: parent.top; bottom: parent.bottom; topMargin: win.contentTop }
+                onPicked: (key, name) => win.openPlaylist(key, name)
             }
             Carousel {
                 id: albumFlow
                 kind: "album"
+                active: !win.phone
                 searching: win.searchOpen && win.view === "albums"
-                visible: win.view === "albums"
-                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: 70 }
+                visible: active && win.view === "albums"
+                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: win.phone ? win.contentTop : 70 }
                 onPicked: (key, name) => win.pick("album", key, name)
             }
             Carousel {
                 id: artistFlow
                 kind: "artist"
+                active: !win.phone
                 searching: win.searchOpen && win.view === "artists"
-                visible: win.view === "artists"
-                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: 70 }
+                visible: active && win.view === "artists"
+                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: win.phone ? win.contentTop : 70 }
                 onPicked: (key, name) => win.pick("artist", key, name)
             }
             Carousel {
                 id: playlistFlow
                 kind: "playlist"
+                active: !win.phone
                 searching: win.searchOpen && win.view === "playlists"
-                visible: win.view === "playlists"
-                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: 70 }
+                visible: active && win.view === "playlists"
+                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: win.phone ? win.contentTop : 70 }
                 onPicked: (key, name) => win.openPlaylist(key, name)
             }
         }
@@ -333,11 +421,12 @@ Window {
             visible: win.searchOpen
             kind: win.view === "albums" ? "album" : win.view === "artists" ? "artist" : "playlist"
             suggestions: win.view !== "songs"
-            x: side.width + (parent.width - side.width - width) / 2
-            y: 18
+            width: win.phone ? parent.width - 68 : 440
+            x: win.phone ? 8 : side.width + (parent.width - side.width - width) / 2
+            y: win.phone ? 6 : 18
             onTyped: (q) => { if (win.view === "songs") library.search = q }
             onChosen: (item) => {
-                (win.view === "albums" ? albumFlow : win.view === "artists" ? artistFlow : playlistFlow).focusKey(item.key)
+                win.groupView(win.view).focusKey(item.key)
             }
             onClosed: win.searchOpen = false
         }
@@ -345,8 +434,8 @@ Window {
         Rectangle {
             z: 30
             visible: win.sortOpen && win.view === "songs"
-            x: side.width + 36
-            y: 72
+            x: win.phone ? win.gutter : side.width + 36
+            y: win.phone ? chips.y + chips.height + 4 : 72
             width: 210
             height: sortCol.implicitHeight
             color: Qt.rgba(1, 1, 1, 0.94)
@@ -378,7 +467,7 @@ Window {
         Rectangle {   // source dropdown
             z: 30
             visible: win.sourceOpen
-            x: Math.min(win.srcX, win.width - width - 10)
+            x: Math.max(10, Math.min(win.srcX, win.width - width - 10))
             y: win.srcY + 4
             width: 240
             height: srcCol.implicitHeight
@@ -414,7 +503,7 @@ Window {
 
         PlayerBar {
             id: bar
-            anchors { left: side.right; leftMargin: 20; right: parent.right; rightMargin: 20; bottom: parent.bottom; bottomMargin: 16 }
+            anchors { left: win.phone ? parent.left : side.right; leftMargin: win.phone ? 8 : 20; right: parent.right; rightMargin: win.phone ? 8 : 20; bottom: parent.bottom; bottomMargin: win.phone ? 8 : 16 }
             onExpand: win.expanded = true
         }
     }
@@ -425,18 +514,34 @@ Window {
         onCollapse: win.expanded = false
     }
 
+    IconButton {      // phone: opens the menu
+        z: 10
+        visible: win.phone && !win.expanded && !win.settingsOpen && !win.drawerOpen && !win.searchOpen
+        anchors { left: parent.left; leftMargin: 6; top: parent.top; topMargin: 6 }
+        name: "menu"; box: 44; iconSize: 24
+        onClicked: win.drawerOpen = true
+    }
+
+    IconButton {      // phone: closes the search box
+        z: 41
+        visible: win.phone && win.searchOpen && !win.expanded
+        anchors { right: parent.right; rightMargin: 6; top: parent.top; topMargin: 6 }
+        name: "close"; box: 44; iconSize: 20
+        onClicked: win.searchOpen = false
+    }
+
     IconButton {
         z: 10
-        visible: !win.settingsOpen && win.view !== "friends" && win.view !== "user" && win.view !== "friendpl"
-        anchors { right: parent.right; rightMargin: 76; top: parent.top; topMargin: 18 }
+        visible: !win.settingsOpen && !(win.phone && (win.drawerOpen || win.searchOpen)) && win.view !== "friends" && win.view !== "user" && win.view !== "friendpl"
+        anchors { right: parent.right; rightMargin: win.phone ? 52 : 76; top: parent.top; topMargin: win.phone ? 6 : 18 }
         name: "search"; box: 44; iconSize: 22
         onClicked: win.searchOpen = !win.searchOpen
     }
 
     IconButton {
         z: 10
-        visible: !win.settingsOpen            // hidden while the settings box is open
-        anchors { right: parent.right; rightMargin: 20; top: parent.top; topMargin: 18 }
+        visible: !win.settingsOpen && !(win.phone && (win.drawerOpen || win.searchOpen))      // hidden while the settings box is open
+        anchors { right: parent.right; rightMargin: win.phone ? 6 : 20; top: parent.top; topMargin: win.phone ? 6 : 18 }
         name: "gear"; box: 44; iconSize: 22
         onClicked: win.settingsOpen = !win.settingsOpen
     }
@@ -452,8 +557,8 @@ Window {
         id: settingsPanel
         z: 20
         visible: win.settingsOpen
-        width: 540
-        anchors { right: parent.right; rightMargin: 20; top: parent.top; topMargin: 16; bottom: parent.bottom; bottomMargin: win.expanded ? 16 : 88 }
+        width: win.phone ? win.width : 540
+        anchors { right: parent.right; rightMargin: win.phone ? 0 : 20; top: parent.top; topMargin: win.phone ? 0 : 16; bottom: parent.bottom; bottomMargin: win.phone ? 0 : (win.expanded ? 16 : 88) }
         onClose: win.settingsOpen = false
         onAddServerRequested: { win.settingsOpen = false; win.addServerOpen = true }
     }

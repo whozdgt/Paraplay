@@ -9,7 +9,13 @@
 #include <cmath>
 #include <vector>
 
+#ifdef HAVE_MPV
 #include <mpv/client.h>
+#else
+#include <QAudioOutput>
+#include <QMediaPlayer>
+#include <QUrl>
+#endif
 
 #include "cover.h"
 
@@ -47,6 +53,94 @@ void dominant(const QImage &src, QColor &a, QColor &b)
 }
 
 } // namespace
+
+#ifndef HAVE_MPV
+
+// Phones: Qt Multimedia hands the file to the system's decoders. It plays what Android can play (FLAC, MP3, AAC, Opus, WAV…)
+// but the system mixer sets the output rate, so there is no bit-perfect mode here.
+Player::Player(Library *lib, bool bitPerfect, bool matchRate, QObject *parent)
+    : QObject(parent), m_lib(lib), m_bitPerfect(bitPerfect)
+{
+    Q_UNUSED(matchRate)
+    m_qmp = new QMediaPlayer(this);
+    m_out = new QAudioOutput(this);
+    m_qmp->setAudioOutput(m_out);
+    connect(m_qmp, &QMediaPlayer::positionChanged, this, [this](qint64 ms) {
+        const double v = ms / 1000.0;
+        if (v < m_pos || v - m_pos >= 0.25) { m_pos = v; emit positionChanged(); updateLyricIndex(); }
+    });
+    connect(m_qmp, &QMediaPlayer::playbackStateChanged, this, [this](QMediaPlayer::PlaybackState st) {
+        m_paused = st != QMediaPlayer::PlayingState;
+        m_idle = st == QMediaPlayer::StoppedState;
+        if (m_idle) { m_pos = 0; emit positionChanged(); }
+        refreshPlaying();
+    });
+    connect(m_qmp, &QMediaPlayer::mediaStatusChanged, this, [this](QMediaPlayer::MediaStatus ms) {
+        if (ms != QMediaPlayer::EndOfMedia) return;
+        QMetaObject::invokeMethod(this, &Player::advance, Qt::QueuedConnection);
+    });
+    connect(m_qmp, &QMediaPlayer::errorOccurred, this, [this](QMediaPlayer::Error, const QString &text) {
+        static const QRegularExpression secret(QStringLiteral("([?&](?:t|s|u|api_key|ApiKey|DeviceId)=)[^&\\s]+"));
+        QString t = text;
+        t.replace(secret, QStringLiteral("\\1***"));
+        qWarning("Music: playback error: %s", t.toUtf8().constData());
+    });
+}
+
+Player::~Player() = default;
+
+void Player::advance()
+{
+    if (m_cur + 1 < m_order.size()) startAt(m_cur + 1);
+}
+
+void Player::setBitPerfect(bool on) { m_bitPerfect = on; }
+
+void Player::setVolume(int v)
+{
+    v = std::clamp(v, 0, 100);
+    m_volume = v;
+    if (m_out) m_out->setVolume(v / 100.0f);
+    emit volumeChanged();
+}
+
+QByteArray Player::pathAt(int pos) const
+{
+    const Track &t = (*m_tracks)[m_order[pos]];
+    if (!t.isRemote()) return t.path.toUtf8();
+    return m_remote.url ? m_remote.url(t.path).toUtf8() : QByteArray();
+}
+
+void Player::startAt(int pos)
+{
+    if (!m_tracks || pos < 0 || pos >= m_order.size()) return;
+    const QByteArray file = pathAt(pos);
+    if (file.isEmpty()) { qWarning("Music: that song's server isn't available"); return; }
+    const Track &t = (*m_tracks)[m_order[pos]];
+    m_cur = pos;
+    m_qmp->setSource(t.isRemote() ? QUrl(QString::fromUtf8(file)) : QUrl::fromLocalFile(QString::fromUtf8(file)));
+    m_qmp->play();
+    updateCurrent();
+}
+
+void Player::setPaused(bool p)
+{
+    if (p) m_qmp->pause(); else m_qmp->play();
+}
+
+void Player::stop() { m_qmp->stop(); }
+
+void Player::seek(double seconds)
+{
+    if (!hasTrack()) return;
+    seconds = std::clamp(seconds, 0.0, m_dur > 0 ? m_dur : seconds);
+    m_qmp->setPosition(qint64(seconds * 1000));
+    m_pos = seconds;
+    emit positionChanged();
+    updateLyricIndex();
+}
+
+#else   // desktop: libmpv
 
 Player::Player(Library *lib, bool bitPerfect, bool matchRate, QObject *parent)
     : QObject(parent), m_lib(lib), m_bitPerfect(bitPerfect)
@@ -141,6 +235,8 @@ void Player::applyNetwork(int pos)
     mpv_set_property_string(m_mpv, "demuxer-max-bytes", t.isRemote() ? "16MiB" : "4MiB");
 }
 
+#endif   // backend
+
 void Player::playRow(int viewRow)
 {
     const Library::Snapshot s = m_lib->snapshot();
@@ -150,6 +246,7 @@ void Player::playRow(int viewRow)
     startAt(viewRow);
 }
 
+#ifdef HAVE_MPV
 void Player::startAt(int pos)
 {
     if (!m_mpv) { qWarning("Music: cannot play, mpv is not available"); return; }
@@ -180,6 +277,8 @@ void Player::setPaused(bool p)
     mpv_set_property(m_mpv, "pause", MPV_FORMAT_FLAG, &f);
 }
 
+#endif
+
 void Player::toggle()
 {
     if (!hasTrack()) return;
@@ -196,6 +295,7 @@ void Player::prev()
     else startAt(m_cur - 1);
 }
 
+#ifdef HAVE_MPV
 void Player::stop()
 {
     if (!m_mpv) return;
@@ -212,12 +312,15 @@ void Player::seek(double seconds)
     updateLyricIndex();
 }
 
+#endif
+
 void Player::refreshPlaying()
 {
     const bool p = !m_paused && !m_idle && m_cur >= 0;
     if (p != m_playing) { m_playing = p; emit playingChanged(); }
 }
 
+#ifdef HAVE_MPV
 void Player::handleEvents()
 {
     while (m_mpv) {
@@ -256,6 +359,8 @@ void Player::handleEvents()
         }
     }
 }
+
+#endif
 
 void Player::updateCurrent()
 {

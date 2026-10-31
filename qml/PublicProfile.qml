@@ -3,6 +3,7 @@ import QtQuick
 // Someone's profile, exactly as the database lets this viewer see it. Also used for "Preview" of your own.
 Flickable {
     id: root
+    readonly property int gut: width < 600 ? 16 : 36      // side margin; smaller on a phone
     signal openPlaylist(string pid, string name, string owner)
 
     readonly property var p: social.profile
@@ -37,8 +38,8 @@ Flickable {
     Column {
         id: col
         z: 4          // above the click-away area, so the menu and cards still get their clicks
-        x: 36
-        width: Math.min(720, root.width - 72)
+        x: root.gut
+        width: Math.min(720, root.width - 2 * root.gut)
 
         Text {
             visible: root.p.loading === true

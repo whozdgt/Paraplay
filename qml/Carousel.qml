@@ -5,6 +5,7 @@ Item {
     id: root
     property string kind: "album"          // album | artist | playlist
     property bool searching: false         // true = the covers stack up behind the front one
+    property bool active: true             // false = hold nothing in memory (a phone shows a grid instead)
     property string editName: ""           // artist whose photo is being changed
     // While searching, a chosen result is shown on its own (two plain frosted layers behind it) and the
     // carousel behind it is unloaded, so nothing has to scroll past hundreds of covers.
@@ -15,6 +16,7 @@ Item {
     readonly property color pri: settings.primary
     readonly property bool stacked: stackItem !== null
     readonly property var items: {
+        if (!active) return []
         if (kind === "playlist") { playlists.revision; return playlists.list() }
         library.revision
         return library.groups(kind)

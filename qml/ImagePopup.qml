@@ -45,7 +45,7 @@ Item {
 
     Rectangle {
         anchors.centerIn: parent
-        width: 460
+        width: Math.min(460, root.width - 24)
         height: content.implicitHeight + 40
         color: Qt.rgba(1, 1, 1, 0.94)
         MouseArea { anchors.fill: parent }

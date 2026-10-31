@@ -5,6 +5,7 @@ Rectangle {
     property string view
     property bool homeOpen: true
     property bool streamOpen: false
+    property bool drawer: false          // phone: slides over the page, so it needs a solid background
     signal select(string v)
     signal profileClicked()
     signal sourceSelected(string id)       // "" = all sources, "local", or a server id
@@ -13,7 +14,7 @@ Rectangle {
     readonly property color pri: settings.primary
     readonly property bool hasServers: servers.count > 0
 
-    color: Qt.rgba(1, 1, 1, 0.28)
+    color: drawer ? settings.bgColor : Qt.rgba(1, 1, 1, 0.28)
     Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Qt.rgba(1, 1, 1, 0.55) }
 
     Flickable {

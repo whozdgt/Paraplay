@@ -10,7 +10,12 @@
 
 #include "library.h"
 
+#ifdef HAVE_MPV
 struct mpv_handle;
+#else
+class QMediaPlayer;
+class QAudioOutput;
+#endif
 
 class Player : public QObject {
     Q_OBJECT
@@ -84,20 +89,29 @@ signals:
     void volumeChanged();
 
 private:
+#ifdef HAVE_MPV
     void handleEvents();
     void cmd(std::initializer_list<QByteArray> args);
-    void startAt(int pos);
     void enqueueNext();
+    void applyNetwork(int pos);
+#else
+    void advance();
+#endif
+    void startAt(int pos);
     void setPaused(bool p);
     void refreshPlaying();
     void updateCurrent();
     void loadLyrics(const QString &audioPath);
     void updateLyricIndex();
     QByteArray pathAt(int pos) const;
-    void applyNetwork(int pos);
 
     Library *m_lib;
+#ifdef HAVE_MPV
     mpv_handle *m_mpv = nullptr;
+#else
+    QMediaPlayer *m_qmp = nullptr;      // phones: the system's audio decoders through Qt Multimedia
+    QAudioOutput *m_out = nullptr;
+#endif
     std::shared_ptr<const QVector<Track>> m_tracks;
     QVector<int> m_order;
     int m_cur = -1;

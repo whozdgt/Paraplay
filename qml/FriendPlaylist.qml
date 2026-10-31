@@ -4,6 +4,7 @@ import QtQuick.Layouts
 // A friend's playlist. Their songs arrive as text only; every song you also own plays from your own copy.
 Item {
     id: root
+    readonly property int gut: width < 600 ? 16 : 36      // side margin; smaller on a phone
     readonly property var pl: social.playlist
     readonly property var prof: social.profile
     readonly property bool ready: !!pl.id && pl.loading !== true && pl.missing !== true
@@ -21,8 +22,8 @@ Item {
     }
 
     Item {
-        x: 36
-        width: root.width - 72
+        x: root.gut
+        width: root.width - 2 * root.gut
         height: root.height
 
         Row {

@@ -1,0 +1,165 @@
+name: android
+
+# Builds the Android app (an APK you can install on a phone).
+#  - every push to main and every pull request: builds it, so a mistake shows up here, and keeps the APK for 14 days
+#    (open the run, scroll to "Artifacts")
+#  - a version tag like v0.7.0: also attaches the APK to that release
+#
+# Signing: an APK must be signed before a phone will install it. Without secrets, each build is signed with a new
+# throwaway key, which works, but Android then refuses to update over the previous install (uninstall first).
+# To fix that once, add these repository secrets (Settings > Secrets and variables > Actions):
+#   ANDROID_KEYSTORE_BASE64   the .jks file, base64 encoded
+#   ANDROID_KEY_ALIAS         the key's alias
+#   ANDROID_KEYSTORE_PASSWORD the password (used for the key too)
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths: ['android/**', 'src/**', 'qml/**', 'CMakeLists.txt', '.github/workflows/android.yml']
+  pull_request:
+    paths: ['android/**', 'src/**', 'qml/**', 'CMakeLists.txt', '.github/workflows/android.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write      # to attach the APK to a release
+
+env:
+  QT_VERSION: 6.8.3
+  NDK_VERSION: 26.1.10909125
+  BUILD_TOOLS: 34.0.0
+  TAGLIB_VERSION: v2.0.2
+
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # Qt is installed twice: the build tools run on this machine (gcc_64), the libraries are for the phone.
+      - name: Qt for this machine (build tools)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: linux
+          target: desktop
+          arch: linux_gcc_64
+          modules: qtmultimedia
+          dir: ${{ github.workspace }}/qt
+          set-env: false
+          cache: true
+          cache-key-prefix: qt-host
+
+      - name: Qt for Android
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: linux
+          target: android
+          arch: android_arm64_v8a
+          modules: qtmultimedia
+          dir: ${{ github.workspace }}/qt
+          set-env: false
+          cache: true
+          cache-key-prefix: qt-android
+
+      - name: Android SDK and NDK
+        run: |
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-34" "build-tools;${BUILD_TOOLS}" "ndk;${NDK_VERSION}" > /dev/null
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
+
+      - name: TagLib for Android (reads song tags)
+        run: |
+          git clone --depth 1 --branch "$TAGLIB_VERSION" --recurse-submodules https://github.com/taglib/taglib.git
+          cmake -S taglib -B taglib-build -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-28 \
+            -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+            -DBUILD_TESTING=OFF -DBUILD_EXAMPLES=OFF -DBUILD_BINDINGS=OFF \
+            -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/taglib-android"
+          cmake --build taglib-build
+          cmake --install taglib-build
+          ls -l taglib-android/lib
+
+      - name: OpenSSL and font for the app
+        run: |
+          # Qt on Android loads OpenSSL from inside the app, otherwise https (sign-in, servers) fails
+          git clone --depth 1 https://github.com/KDAB/android_openssl.git openssl
+          ls openssl/ssl_3/arm64-v8a
+          sudo apt-get update -qq && sudo apt-get install -y -qq fonts-jetbrains-mono
+          font="$(dpkg -L fonts-jetbrains-mono | grep -m1 'JetBrainsMono-Regular.ttf$')"
+          echo "FONT_DIR=$(dirname "$font")" >> "$GITHUB_ENV"
+          ls "$(dirname "$font")" | head
+
+      - name: Configure
+        run: |
+          QT_ANDROID="$GITHUB_WORKSPACE/qt/Qt/${QT_VERSION}/android_arm64_v8a"
+          QT_HOST="$GITHUB_WORKSPACE/qt/Qt/${QT_VERSION}/gcc_64"
+          "$QT_ANDROID/bin/qt-cmake" -S . -B build-android -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DQT_HOST_PATH="$QT_HOST" \
+            -DANDROID_SDK_ROOT="$ANDROID_HOME" -DANDROID_NDK_ROOT="$ANDROID_NDK_ROOT" \
+            -DQT_ANDROID_ABIS=arm64-v8a \
+            -DTAGLIB_PREFIX="$GITHUB_WORKSPACE/taglib-android" \
+            -DANDROID_OPENSSL_DIR="$GITHUB_WORKSPACE/openssl" \
+            -DANDROID_FONT_DIR="$FONT_DIR" \
+            -DANDROID_VERSION_CODE="${{ github.run_number }}"
+
+      - name: Build the APK
+        run: cmake --build build-android --target apk
+
+      - name: Sign
+        id: sign
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          ver="$(sed -n 's/^project(musicplayer VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)"
+          bt="$ANDROID_HOME/build-tools/${BUILD_TOOLS}"
+          src="$(find build-android -name '*.apk' | sort | head -1)"
+          echo "Built: $src"
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > release.jks
+            alias="$KS_ALIAS"; pass="$KS_PASS"
+            echo "Signing with your own key."
+          else
+            pass="paraplay-throwaway"; alias="paraplay"
+            keytool -genkeypair -keystore release.jks -alias "$alias" -storepass "$pass" -keypass "$pass" \
+              -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Paraplay build"
+            echo "No signing secrets set: signed with a throwaway key (see the top of this file)."
+          fi
+          "$bt/zipalign" -f -p 4 "$src" aligned.apk
+          "$bt/apksigner" sign --ks release.jks --ks-key-alias "$alias" --ks-pass "pass:$pass" --key-pass "pass:$pass" \
+            --out "Paraplay-${ver}-arm64.apk" aligned.apk
+          "$bt/apksigner" verify --print-certs "Paraplay-${ver}-arm64.apk"
+          rm -f release.jks
+          echo "apk=Paraplay-${ver}-arm64.apk" >> "$GITHUB_OUTPUT"
+          ls -l Paraplay-*.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Paraplay-android
+          path: ${{ steps.sign.outputs.apk }}
+          retention-days: 14
+
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # the release workflow creates the release a moment after the tag; wait for it
+          for i in $(seq 1 30); do
+            gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1 && break
+            sleep 10
+          done
+          gh release upload "$GITHUB_REF_NAME" "${{ steps.sign.outputs.apk }}" --clobber
