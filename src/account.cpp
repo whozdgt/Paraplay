@@ -16,6 +16,7 @@
 #include <QStandardPaths>
 #include <QUrl>
 #include <algorithm>
+#include <utility>
 
 #include "backend_config.h"
 #include "playlists.h"
@@ -224,11 +225,19 @@ void Account::ensureToken(const std::function<void(bool)> &cb)
 {
     if (m_refresh.isEmpty()) { cb(false); return; }
     if (!m_access.isEmpty() && QDateTime::currentSecsSinceEpoch() < m_expires - 60) { cb(true); return; }
+    // Several requests can ask at once (the Friends page does); they share one refresh.
+    m_tokenWaiters.push_back(cb);
+    if (m_refreshingToken) return;
+    m_refreshingToken = true;
     request("POST", QStringLiteral("/auth/v1/token?grant_type=refresh_token"),
             QJsonDocument(QJsonObject{{"refresh_token", m_refresh}}),
-            [this, cb](bool ok, const QJsonDocument &d, int) {
-                if (ok) { storeSession(d.object()); cb(true); }
-                else { signOutLocal(); setMessage(QStringLiteral("Your session ended. Please sign in again.")); cb(false); }
+            [this](bool ok, const QJsonDocument &d, int st) {
+                m_refreshingToken = false;
+                if (ok) storeSession(d.object());
+                // Only a refusal ends the session. A dropped connection must not sign you out.
+                else if (st == 400 || st == 401 || st == 403) { signOutLocal(); setMessage(QStringLiteral("Your session ended. Please sign in again.")); }
+                const auto waiting = std::exchange(m_tokenWaiters, {});
+                for (const auto &w : waiting) w(ok);
             }, false);
 }
 
@@ -291,6 +300,9 @@ void Account::afterSignIn()
             m_visibility = o.value(QLatin1String("visibility")).toString(QStringLiteral("private"));
             m_discoverable = o.value(QLatin1String("discoverable")).toBool();
             m_showPlaylists = o.value(QLatin1String("show_playlists")).toBool();
+            m_listeningPublic = o.value(QLatin1String("listening_public")).toBool();
+            m_showCounts = o.value(QLatin1String("show_counts")).toBool(true);
+            if (m_visibility != QLatin1String("public")) m_visibility = QStringLiteral("private");
             QSettings().setValue("account/username", m_username);
             m_avatarPath = o.value(QLatin1String("avatar_path")).toString();
             m_bannerPath = o.value(QLatin1String("banner_path")).toString();
@@ -312,6 +324,7 @@ void Account::signOutLocal()
     m_avatarPath.clear(); m_bannerPath.clear(); m_avatarUrl.clear(); m_bannerUrl.clear(); m_uploading = false;
     m_access.clear(); m_refresh.clear(); m_uid.clear(); m_username.clear(); m_displayName.clear(); m_bio.clear();
     m_visibility = QStringLiteral("private"); m_discoverable = false; m_showPlaylists = false;
+    m_listeningPublic = false; m_showCounts = true;
     m_busy = false; m_syncing = false; m_jobs.clear(); m_lastSync.clear();
     QSettings st;
     st.remove("account/refresh"); st.remove("account/uid"); st.remove("account/username"); st.remove("account/lastSync");
@@ -323,17 +336,19 @@ void Account::signOutLocal()
 void Account::signOut() { signOutLocal(); }
 
 void Account::saveProfile(const QString &displayName, const QString &bio, const QString &visibility,
-                          bool discoverable, bool showPlaylists)
+                          bool discoverable, bool showPlaylists, bool listeningPublic, bool showCounts)
 {
     if (!signedIn()) return;
     const QJsonObject body{{"display_name", displayName.trimmed().left(40)}, {"bio", bio.trimmed().left(160)},
-                           {"visibility", visibility}, {"discoverable", discoverable}, {"show_playlists", showPlaylists}};
+                           {"visibility", visibility}, {"discoverable", discoverable}, {"show_playlists", showPlaylists},
+                           {"listening_public", listeningPublic}, {"show_counts", showCounts}};
     setMessage(QStringLiteral("Saving…"));
     request("PATCH", QStringLiteral("/rest/v1/profiles?id=eq.") + m_uid, QJsonDocument(body),
-            [this, displayName, bio, visibility, discoverable, showPlaylists](bool ok, const QJsonDocument &d, int st) {
+            [this, displayName, bio, visibility, discoverable, showPlaylists, listeningPublic, showCounts](bool ok, const QJsonDocument &d, int st) {
         if (!ok) { setMessage(apiError(d, st)); return; }
         m_displayName = displayName.trimmed().left(40); m_bio = bio.trimmed().left(160);
         m_visibility = visibility; m_discoverable = discoverable; m_showPlaylists = showPlaylists;
+        m_listeningPublic = listeningPublic; m_showCounts = showCounts;
         setMessage(QStringLiteral("Profile saved."));
     }, true, {{"Prefer", "return=minimal"}});
 }
@@ -344,7 +359,7 @@ void Account::syncNow()
     if (!signedIn() || m_syncing) return;
     m_syncing = true;
     setMessage(QStringLiteral("Syncing…"));
-    request("GET", QStringLiteral("/rest/v1/playlists?select=id,name,updated_at,playlist_tracks(position,title,artist,album,duration_ms)&owner=eq.") + m_uid,
+    request("GET", QStringLiteral("/rest/v1/playlists?select=id,name,updated_at,shared,playlist_tracks(position,title,artist,album,duration_ms)&owner=eq.") + m_uid,
             {}, [this](bool ok, const QJsonDocument &d, int st) {
         if (!ok) { finishSync(false, apiError(d, st)); return; }
         reconcile(d.array());
@@ -362,7 +377,8 @@ void Account::queuePush(const QVariantMap &pl)
 {
     const QString id = pl.value("id").toString();
     const QJsonObject row{{"id", id}, {"owner", m_uid}, {"name", pl.value("name").toString().left(60)},
-                          {"updated_at", isoUtc(pl.value("updated").toLongLong())}};
+                          {"updated_at", isoUtc(pl.value("updated").toLongLong())},
+                          {"shared", pl.value("shared").toBool()}};
     queue("POST", QStringLiteral("/rest/v1/playlists?on_conflict=id"), QJsonDocument(QJsonArray{row}),
           {{"Prefer", "resolution=merge-duplicates,return=minimal"}});
     queue("DELETE", QStringLiteral("/rest/v1/playlist_tracks?playlist_id=eq.") + id, QJsonDocument());
@@ -398,7 +414,8 @@ void Account::reconcile(const QJsonArray &remote)
         QVariantList list;
         for (const auto &p : tr) list.push_back(p.second);
         m_playlists->applyRemote(o.value(QLatin1String("id")).toString(), o.value(QLatin1String("name")).toString(),
-                                 parseIso(o.value(QLatin1String("updated_at")).toString()), list);
+                                 parseIso(o.value(QLatin1String("updated_at")).toString()), list,
+                                 o.value(QLatin1String("shared")).toBool());
     };
 
     QSet<QString> localIds;

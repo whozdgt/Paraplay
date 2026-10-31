@@ -22,6 +22,9 @@ class Account : public QObject {
     Q_PROPERTY(QString visibility READ visibility NOTIFY changed)
     Q_PROPERTY(bool discoverable READ discoverable NOTIFY changed)
     Q_PROPERTY(bool showPlaylists READ showPlaylists NOTIFY changed)
+    Q_PROPERTY(bool listeningPublic READ listeningPublic NOTIFY changed)
+    Q_PROPERTY(bool showCounts READ showCounts NOTIFY changed)
+    Q_PROPERTY(QString uid READ uid NOTIFY changed)
     Q_PROPERTY(bool syncPlaylists READ syncPlaylists WRITE setSyncPlaylists NOTIFY changed)
     Q_PROPERTY(QString avatarUrl READ avatarUrl NOTIFY changed)
     Q_PROPERTY(QString bannerUrl READ bannerUrl NOTIFY changed)
@@ -45,6 +48,9 @@ public:
     QString visibility() const { return m_visibility; }
     bool discoverable() const { return m_discoverable; }
     bool showPlaylists() const { return m_showPlaylists; }
+    bool listeningPublic() const { return m_listeningPublic; }
+    bool showCounts() const { return m_showCounts; }
+    QString uid() const { return m_uid; }
     bool syncPlaylists() const { return m_syncPlaylists; }
     void setSyncPlaylists(bool on);
     QString message() const { return m_message; }
@@ -55,7 +61,14 @@ public:
     Q_INVOKABLE void signOut();
     Q_INVOKABLE void syncNow();
     Q_INVOKABLE void saveProfile(const QString &displayName, const QString &bio, const QString &visibility,
-                                 bool discoverable, bool showPlaylists);
+                                 bool discoverable, bool showPlaylists, bool listeningPublic, bool showCounts);
+    // For the social features: a signed-in request to the database.
+    using Reply = std::function<void(bool ok, const QJsonDocument &doc, int status)>;
+    void call(const QByteArray &verb, const QString &path, const QJsonDocument &body, const Reply &done,
+              const QList<QPair<QByteArray, QByteArray>> &extra = {})
+    {
+        request(verb, path, body, done, true, extra);
+    }
     // kind is "avatar" or "banner". source is a file path or file:// URL.
     Q_INVOKABLE void uploadImage(const QString &kind, const QString &source);
     Q_INVOKABLE void removeImage(const QString &kind);
@@ -102,7 +115,10 @@ private:
     QString m_message, m_lastSync;
     QString m_avatarPath, m_bannerPath, m_avatarUrl, m_bannerUrl;   // storage path / cached file URL
     QSet<QString> m_fetching;
+    QList<std::function<void(bool)>> m_tokenWaiters;
+    bool m_refreshingToken = false;
     qint64 m_expires = 0;
     bool m_uploading = false;
-    bool m_busy = false, m_syncing = false, m_discoverable = false, m_showPlaylists = false, m_syncPlaylists = true;
+    bool m_busy = false, m_syncing = false, m_discoverable = false, m_showPlaylists = false, m_syncPlaylists = true,
+         m_listeningPublic = false, m_showCounts = true;
 };

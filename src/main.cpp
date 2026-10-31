@@ -18,6 +18,7 @@
 #include "player.h"
 #include "playlists.h"
 #include "servers.h"
+#include "social.h"
 #include "updater.h"
 #ifdef HAVE_MPRIS
 #include "mpris.h"
@@ -75,6 +76,8 @@ int main(int argc, char *argv[])
     Playlists playlists(&library);
     Account account(&playlists);
     ServerManager servers(&library);
+    Social social(&account, &library, &player);
+    social.setServerName([&](const QString &p) { return servers.serverNameFor(p); });
     UpdateChecker updater;
     player.setRemote({
         [&](const QString &p) { return servers.streamUrl(p); },
@@ -102,6 +105,7 @@ int main(int argc, char *argv[])
     ctx->setContextProperty("playlists", &playlists);
     ctx->setContextProperty("account", &account);
     ctx->setContextProperty("servers", &servers);
+    ctx->setContextProperty("social", &social);
     ctx->setContextProperty("updater", &updater);
     engine.loadFromModule("Music", "Main");
     if (engine.rootObjects().isEmpty()) return 1;

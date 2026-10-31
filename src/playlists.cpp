@@ -45,6 +45,7 @@ void Playlists::load()
         p.id = o.value(QLatin1String("id")).toString();
         p.name = o.value(QLatin1String("name")).toString();
         p.updated = qint64(o.value(QLatin1String("updated")).toDouble());
+        p.shared = o.value(QLatin1String("shared")).toBool();
         for (const QJsonValue &tv : o.value(QLatin1String("tracks")).toArray()) {
             const QJsonObject t = tv.toObject();
             p.items.push_back({t.value(QLatin1String("path")).toString(), t.value(QLatin1String("title")).toString(),
@@ -62,7 +63,7 @@ void Playlists::save()
         QJsonArray tracks;
         for (const Item &i : p.items)
             tracks.push_back(QJsonObject{{"path", i.path}, {"title", i.title}, {"artist", i.artist}, {"album", i.album}});
-        arr.push_back(QJsonObject{{"id", p.id}, {"name", p.name}, {"updated", double(p.updated)}, {"tracks", tracks}});
+        arr.push_back(QJsonObject{{"id", p.id}, {"name", p.name}, {"updated", double(p.updated)}, {"shared", p.shared}, {"tracks", tracks}});
     }
     QJsonArray del;
     for (const QString &d : m_deleted) del.push_back(d);
@@ -91,6 +92,7 @@ QVariantList Playlists::list() const
         QVariantMap m;
         m["key"] = p.id;
         m["name"] = p.name;
+        m["shared"] = p.shared;
         m["sub"] = p.items.size() == 1 ? QStringLiteral("1 song") : QStringLiteral("%1 songs").arg(p.items.size());
         QString art;
         for (const Item &i : p.items) {
@@ -111,6 +113,23 @@ QString Playlists::create(const QString &name)
     p.id = QUuid::createUuid().toString(QUuid::WithoutBraces);
     p.name = name.trimmed().isEmpty() ? QStringLiteral("New playlist") : name.trimmed().left(60);
     p.updated = now();
+    m_pls.push_back(p);
+    changed();
+    return p.id;
+}
+
+QString Playlists::createWith(const QString &name, const QStringList &paths)
+{
+    Pl p;
+    p.id = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    p.name = name.trimmed().isEmpty() ? QStringLiteral("New playlist") : name.trimmed().left(60);
+    p.updated = now();
+    for (const QString &path : paths) {
+        Track t;
+        Item it{path, {}, {}, {}};
+        if (m_lib->find(path, t)) it = {path, t.title, t.artist, t.album};
+        p.items.push_back(it);
+    }
     m_pls.push_back(p);
     changed();
     return p.id;
@@ -148,6 +167,21 @@ void Playlists::removeTrack(const QString &id, const QString &path)
         if (p->items[i].path == path) { p->items.remove(i); p->updated = now(); changed(); return; }
 }
 
+bool Playlists::isShared(const QString &id) const
+{
+    for (const Pl &p : m_pls) if (p.id == id) return p.shared;
+    return false;
+}
+
+void Playlists::setShared(const QString &id, bool shared)
+{
+    Pl *p = find(id);
+    if (!p || p->shared == shared) return;
+    p->shared = shared;
+    p->updated = now();
+    changed();
+}
+
 QStringList Playlists::paths(const QString &id) const
 {
     QStringList out;
@@ -182,17 +216,18 @@ QVariantList Playlists::snapshot() const
             m["duration"] = (!i.path.isEmpty() && m_lib->find(i.path, t)) ? t.lengthMs : 0;
             tracks.push_back(m);
         }
-        out.push_back(QVariantMap{{"id", p.id}, {"name", p.name}, {"updated", p.updated}, {"tracks", tracks}});
+        out.push_back(QVariantMap{{"id", p.id}, {"name", p.name}, {"updated", p.updated}, {"shared", p.shared}, {"tracks", tracks}});
     }
     return out;
 }
 
-void Playlists::applyRemote(const QString &id, const QString &name, qint64 updatedMs, const QVariantList &tracks)
+void Playlists::applyRemote(const QString &id, const QString &name, qint64 updatedMs, const QVariantList &tracks, bool shared)
 {
     Pl *p = find(id);
     if (!p) { m_pls.push_back(Pl{id, name, updatedMs, {}}); p = &m_pls.last(); }
     p->name = name;
     p->updated = updatedMs;
+    p->shared = shared;
     p->items.clear();
     for (const QVariant &v : tracks) {
         const QVariantMap m = v.toMap();

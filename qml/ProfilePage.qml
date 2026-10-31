@@ -15,11 +15,19 @@ Flickable {
     property string vis: "private"
     property bool disc: false
     property bool showPl: false
+    property bool listen: false
+    property bool counts: true
     property bool confirmDelete: false
+    property bool editing: true            // false while the Preview tab is showing (keeps what you typed)
+    // The page holds changes that are not saved yet.
+    readonly property bool dirty: account.signedIn && (nameIn.text !== account.displayName || bioIn.text !== account.bio
+        || vis !== account.visibility || disc !== account.discoverable || showPl !== account.showPlaylists
+        || listen !== account.listeningPublic || counts !== account.showCounts)
 
     function load() {
         nameIn.text = account.displayName; bioIn.text = account.bio
         vis = account.visibility; disc = account.discoverable; showPl = account.showPlaylists
+        listen = account.listeningPublic; counts = account.showCounts
         confirmDelete = false
     }
     onVisibleChanged: if (visible) load()
@@ -40,7 +48,7 @@ Flickable {
         }
 
         ColumnLayout {
-            visible: account.signedIn
+            visible: account.signedIn && root.editing
             Layout.fillWidth: true
             spacing: 0
             // Banner (a still picture or a GIF), then the profile picture and name underneath.
@@ -136,14 +144,14 @@ Flickable {
                 TextInput { id: bioIn; anchors { fill: parent; leftMargin: 10; rightMargin: 10 } verticalAlignment: TextInput.AlignVCenter; clip: true; selectByMouse: true; maximumLength: 160; font.pixelSize: 14; color: root.pri }
             }
 
-            SectionLabel { text: "WHO CAN SEE MY PROFILE" }
+            SectionLabel { text: "WHO CAN SEE WHAT" }
             Row {
                 Repeater {
-                    model: [{ k: "private", t: "Private" }, { k: "friends", t: "Friends" }, { k: "public", t: "Public" }]
+                    model: [{ k: "public", t: "Public" }, { k: "private", t: "Private" }]
                     Rectangle {
                         required property var modelData
                         readonly property bool sel: root.vis === modelData.k
-                        width: 100; height: 36
+                        width: 130; height: 36
                         color: sel ? root.pri : "transparent"
                         border.width: 1; border.color: sel ? root.pri : Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.3)
                         Text { anchors.centerIn: parent; text: parent.modelData.t; font.pixelSize: 13; color: parent.sel ? "white" : root.pri }
@@ -154,16 +162,23 @@ Flickable {
                     }
                 }
             }
-            Text { Layout.topMargin: 6; Layout.fillWidth: true; wrapMode: Text.Wrap; font.pixelSize: 11; color: root.muted; text: "Private is the default. Nothing is shared until you choose." }
+            Text {
+                Layout.topMargin: 6; Layout.fillWidth: true; wrapMode: Text.Wrap; font.pixelSize: 11; lineHeight: 1.3; color: root.muted
+                text: root.vis === "public"
+                    ? "Anyone can open your profile and follow you."
+                    : "Private hides your bio, banner, playlists and listening. People must ask to follow you, and you choose who to accept. Your name, @username and picture can still be seen. New accounts start Private."
+            }
 
-            ToggleRow { Layout.topMargin: 8; label: "Appear in search"; checked: root.disc; onToggled: root.disc = !root.disc }
-            ToggleRow { label: "Show my playlists to others"; checked: root.showPl; onToggled: root.showPl = !root.showPl }
+            ToggleRow { Layout.topMargin: 8; label: "Appear in search"; note: "Others can find @" + account.username; checked: root.disc; onToggled: root.disc = !root.disc }
+            ToggleRow { label: "Show my playlists"; note: "Only ones you mark as shared; needs sync on"; checked: root.showPl; onToggled: root.showPl = !root.showPl }
+            ToggleRow { label: "Show what I'm listening to"; note: "Song and artist while playing. Off by default"; checked: root.listen; onToggled: root.listen = !root.listen }
+            ToggleRow { label: "Show follower counts"; checked: root.counts; onToggled: root.counts = !root.counts }
             ToggleRow { label: "Sync my playlists"; note: "Keeps them on all your computers"; checked: account.syncPlaylists; onToggled: account.syncPlaylists = !account.syncPlaylists }
 
             Row {
                 Layout.topMargin: 14
                 spacing: 10
-                Btn { label: "Save profile"; enabled: !account.busy; onClicked: account.saveProfile(nameIn.text, bioIn.text, root.vis, root.disc, root.showPl) }
+                Btn { label: "Save profile"; enabled: !account.busy; onClicked: account.saveProfile(nameIn.text, bioIn.text, root.vis, root.disc, root.showPl, root.listen, root.counts) }
                 Btn { primary: false; label: "Sync now"; enabled: !account.busy; onClicked: account.syncNow() }
                 Btn { primary: false; label: "Sign out"; onClicked: account.signOut() }
             }

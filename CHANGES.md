@@ -1,3 +1,16 @@
+# Drop 7: friends, public profiles and a profile preview
+- **Friends** (sidebar, under Playlists): Activity, Find people, and Requests. Activity shows what the people you follow are playing right now (with the song's quality), what they played earlier, and the playlists they chose to share.
+- **Public profiles:** open anyone's profile from Find people, Activity or Requests: picture, banner, bio, follower counts, shared playlists, and what they're listening to. Follow with one press; a Private profile gets a "Request" instead.
+- **Public or Private:** your profile page now has a Public / Private switch. A Private profile keeps its bio, banner, playlists, counts and listening hidden from everyone except people you accept. Name, @username and picture stay visible so friends can find you. Accounts start Private.
+- **Preview:** on your own profile page, Edit | Preview shows exactly what a stranger sees, built from what is saved. Nothing in it can be changed.
+- **Your choices:** Appear in search, Show my playlists (only playlists you mark "Share on your profile"; the button sits beside a playlist's name), Show what I'm listening to (off by default), Show follower counts.
+- **A friend's playlist:** their songs arrive as text only (title, artist, album, length). Every song you also own plays from your own copy, local or on any of your servers, at its own quality. Songs you don't have are greyed out. "Play all" plays the ones you have; "Save to my playlists" makes you a copy of them. No music file is ever uploaded or sent.
+- **Block and report:** the "..." button on a profile. Blocking hides you both from each other and removes any follow; undo it under Requests. Reports go to the project owner only.
+- Fixed: a dropped connection no longer signs you out when your session refreshes; only a refusal from the server does.
+- **Needs a one-time database step before you update:** run `supabase/social.sql` in the Supabase SQL Editor (safe to run twice). It adds the social tables and tightens the older ones so nobody can read another person's profile, playlists or songs directly. Without it, saving your profile and syncing playlists will fail.
+- Needs `cmake -B build` to be run again (new files), then `cmake --build build -j`.
+- Not yet: Spotify and YouTube Music, WebDAV and plain web-folder sources, a Windows build.
+
 # Drop 6: your own servers, updates, and the carousel back at full size
 - Carousels are back to the full-width Cover Flow spread (the Drop 3 size). The playlist "+" tile is gone: press "New playlist" beside the Playlists heading instead.
 - Searching Albums, Artists or Playlists is lighter: when you choose a result, only that cover stays loaded (with two plain frosted layers behind it) and the rest of the carousel is unloaded. Closing the search fans the carousel back out at that cover.

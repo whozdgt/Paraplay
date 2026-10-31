@@ -51,20 +51,26 @@ Sidebar → SOURCES → **Add a server…**, or Settings → Servers. Pick Navid
 - Lyrics from a `.lrc` file with the same name next to the song.
 - Media keys, `playerctl` and waybar media module (MPRIS).
 - Optional profile (username and password, no email) with playlist sync, profile picture and banner.
+- Friends: find people, follow them, see what they play, open public profiles and play their shared playlists from your own copies of the songs. Public or Private profiles, with a Preview of what strangers see. Needs `supabase/social.sql` run once (see below).
 - Keys: Space play/pause, Left/Right seek 5 s, N / P next / previous, Esc close panel.
 
 ## Not built yet
 
-Spotify and YouTube Music (greyed out, "soon"), following other people and public profiles, shuffle/repeat, WebDAV / web-folder sources, the "Horizon" lyrics font (JetBrains Mono is used for now), a Windows build.
+Spotify and YouTube Music (greyed out, "soon"), shuffle/repeat, WebDAV / web-folder sources, the "Horizon" lyrics font (JetBrains Mono is used for now), a Windows build.
 
 ## What goes online
 
 Nothing, unless you turn it on:
 
 - **Profile:** if you make an account, your username, profile text, playlists and pictures are stored in the project's Supabase database. Your music files never leave your computer.
+- **Friends:** who you follow, who you block, and reports you send are stored there too. A playlist is only visible to others if you mark it Shared and your profile allows it; they get song titles, artists, albums and lengths, never files or file paths. "Show what I'm listening to" is off by default; when you turn it on, the title, artist and quality of the song playing are sent while it plays, and removed when you switch it off.
 - **Artist pictures:** artist names are sent to Deezer to find a photo (Settings → Customisation switches it off).
 - **Updates:** a request to GitHub's releases page.
 - **Servers:** only the servers you add.
+
+## Database setup (once, for the project owner)
+
+The profile and friends features use a Supabase project. Run these in the Supabase dashboard → SQL Editor, in order, once each (all are safe to run twice): `supabase/images.sql` (profile pictures), then `supabase/social.sql` (friends, public profiles, and the privacy rules). `social.sql` also replaces the older row-level rules on profiles and playlists with "you can only touch your own rows"; everyone else reaches your data only through functions that hide whatever a Private profile keeps back.
 
 ## Hyprland
 

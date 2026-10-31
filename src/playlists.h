@@ -16,16 +16,19 @@ public:
 
     Q_INVOKABLE QVariantList list() const;
     Q_INVOKABLE QString create(const QString &name);
+    Q_INVOKABLE QString createWith(const QString &name, const QStringList &paths);   // new playlist holding these songs
     Q_INVOKABLE void rename(const QString &id, const QString &name);
     Q_INVOKABLE void remove(const QString &id);
     Q_INVOKABLE void addTrack(const QString &id, const QString &path);
     Q_INVOKABLE void removeTrack(const QString &id, const QString &path);
+    Q_INVOKABLE bool isShared(const QString &id) const;
+    Q_INVOKABLE void setShared(const QString &id, bool shared);      // shown on your public profile
     Q_INVOKABLE QStringList paths(const QString &id) const;
     Q_INVOKABLE QVariantList suggest(const QString &query, int limit) const;
 
     // used by sign-in / sync
     QVariantList snapshot() const;
-    void applyRemote(const QString &id, const QString &name, qint64 updatedMs, const QVariantList &tracks);
+    void applyRemote(const QString &id, const QString &name, qint64 updatedMs, const QVariantList &tracks, bool shared = false);
     QStringList takeDeleted();
     void useProfile(const QString &id);
 
@@ -34,7 +37,7 @@ signals:
 
 private:
     struct Item { QString path, title, artist, album; };
-    struct Pl { QString id, name; qint64 updated = 0; QVector<Item> items; };
+    struct Pl { QString id, name; qint64 updated = 0; QVector<Item> items; bool shared = false; };
     Pl *find(const QString &id);
     QString filePath(const QString &profile) const;
     void load();

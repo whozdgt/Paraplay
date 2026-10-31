@@ -59,6 +59,18 @@ Rectangle {
                 NavItem { width: parent.width; sub: true; text: "Albums"; active: root.view === "albums"; onClicked: root.select("albums") }
                 NavItem { width: parent.width; sub: true; text: "Artists"; active: root.view === "artists"; onClicked: root.select("artists") }
                 NavItem { width: parent.width; sub: true; text: "Playlists"; active: root.view === "playlists"; onClicked: root.select("playlists") }
+                NavItem {
+                    width: parent.width; sub: true; text: "Friends"
+                    active: root.view === "friends" || root.view === "user" || root.view === "friendpl"
+                    onClicked: root.select("friends")
+                    Rectangle {      // follow requests waiting for you
+                        visible: social.requestCount > 0
+                        anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                        width: Math.max(18, cnt.implicitWidth + 10); height: 18
+                        color: settings.accent
+                        Text { id: cnt; anchors.centerIn: parent; text: social.requestCount; font.pixelSize: 11; color: "white" }
+                    }
+                }
             }
             Text {
                 text: "SOURCES"

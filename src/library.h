@@ -1,6 +1,7 @@
 #pragma once
 #include <QAbstractListModel>
 #include <QFutureWatcher>
+#include <QHash>
 #include <QVariantList>
 #include <QVector>
 #include <memory>
@@ -44,6 +45,9 @@ public:
     void setRemoteTracks(const QString &serverId, QVector<Track> tracks);
     bool find(const QString &path, Track &out) const;
     bool findByMeta(const QString &title, const QString &artist, const QString &album, Track &out) const;
+    // Finds your own copy of a song someone else described (title, artist, album, length). Ignores case,
+    // punctuation and "(Remastered)"-style brackets, and prefers local files, then lossless ones.
+    bool matchLoose(const QString &title, const QString &artist, const QString &album, int durationMs, Track &out) const;
     QStringList artistsOf(const Track &t) const;
     Snapshot snapshot() const { return {m_all, m_view}; }
 
@@ -71,6 +75,8 @@ private:
     bool inSource(const Track &t) const;
 
     std::shared_ptr<const QVector<Track>> m_all;
+    mutable std::shared_ptr<const QVector<Track>> m_matchBase;   // the list m_matchIndex was built from
+    mutable QHash<QString, QVector<int>> m_matchIndex;           // simplified title -> rows in m_all
     QVector<int> m_view;
     QString m_filterKind, m_filterKey, m_filterName, m_pendingDir, m_sortMode = QStringLiteral("az");
     QStringList m_exceptions, m_filterPaths;

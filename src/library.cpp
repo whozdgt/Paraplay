@@ -10,6 +10,7 @@
 #include <QStandardPaths>
 #include <QtConcurrent/QtConcurrentRun>
 #include <algorithm>
+#include <cstdlib>
 
 #include <taglib/audioproperties.h>
 #include <taglib/fileref.h>
@@ -310,6 +311,62 @@ bool Library::findByMeta(const QString &title, const QString &artist, const QStr
         if (!t.title.compare(title, Qt::CaseInsensitive) && !t.artist.compare(artist, Qt::CaseInsensitive)
             && (album.isEmpty() || !t.album.compare(album, Qt::CaseInsensitive))) { out = t; return true; }
     return false;
+}
+
+namespace {
+// Lower-case letters and digits only, with anything in (...) or [...] left out.
+QString simplified(const QString &s)
+{
+    QString out, all;
+    int depth = 0;
+    for (const QChar c : s) {
+        if (!c.isLetterOrNumber()) {
+            if (c == QLatin1Char('(') || c == QLatin1Char('[')) ++depth;
+            else if ((c == QLatin1Char(')') || c == QLatin1Char(']')) && depth > 0) --depth;
+            continue;
+        }
+        const QChar f = c.toCaseFolded();
+        all += f;
+        if (depth == 0) out += f;
+    }
+    return out.isEmpty() ? all : out;     // a title that is only a bracket keeps its letters
+}
+
+bool sameArtist(const QString &a, const QString &b)
+{
+    if (a == b || a.isEmpty() || b.isEmpty()) return true;
+    const QString &shorter = a.size() < b.size() ? a : b;
+    const QString &longer = a.size() < b.size() ? b : a;
+    return shorter.size() >= 3 && longer.contains(shorter);      // "Jon Hopkins" and "Jon Hopkins feat. X"
+}
+}
+
+bool Library::matchLoose(const QString &title, const QString &artist, const QString &album, int durationMs, Track &out) const
+{
+    if (m_matchBase != m_all) {
+        m_matchIndex.clear();
+        for (int i = 0; i < m_all->size(); ++i) m_matchIndex[simplified((*m_all)[i].title)].push_back(i);
+        m_matchBase = m_all;
+    }
+    const QString nt = simplified(title);
+    if (nt.isEmpty()) return false;
+    const auto it = m_matchIndex.constFind(nt);
+    if (it == m_matchIndex.cend()) return false;
+    const QString na = simplified(artist), nb = simplified(album);
+    int best = -1, bestScore = -1;
+    for (const int i : it.value()) {
+        const Track &t = (*m_all)[i];
+        if (!sameArtist(na, simplified(t.artist))) continue;
+        if (durationMs > 0 && t.lengthMs > 0 && std::abs(durationMs - t.lengthMs) > 3000) continue;
+        int score = 0;
+        if (!nb.isEmpty() && nb == simplified(t.album)) score += 4;
+        if (!t.isRemote()) score += 2;
+        if (t.lossless) score += 1;
+        if (score > bestScore) { bestScore = score; best = i; }
+    }
+    if (best < 0) return false;
+    out = (*m_all)[best];
+    return true;
 }
 
 QVariantList Library::suggest(const QString &kind, const QString &query, int limit) const

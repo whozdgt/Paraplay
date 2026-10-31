@@ -29,6 +29,8 @@ Window {
     onSearchOpenChanged: { if (searchOpen) searchBar.open(); else library.search = "" }
     property string view: "songs"          // songs | albums | artists
     property string backView: ""
+    property string profileMode: "edit"     // edit | preview (your own profile page)
+    property string plBack: "friends"        // where "back" goes from a friend's playlist
     readonly property color pri: settings.primary
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
 
@@ -47,6 +49,17 @@ Window {
         view = "songs"
     }
     function goto(v) { library.clearFilter(); searchOpen = false; backView = ""; view = v }
+    function openUser(name) { searchOpen = false; social.openProfile(name, false); view = "user" }
+    function openFriendPlaylist(pid, name, owner, fromUser) {
+        searchOpen = false
+        plBack = fromUser ? "user" : "friends"
+        social.openPlaylist(pid, name, owner)
+        view = "friendpl"
+    }
+    function back() {
+        if (view === "friendpl" && plBack === "user") view = "user"
+        else goto("friends")
+    }
     function openPlaylist(key, name) {
         searchOpen = false
         currentPlaylist = key
@@ -112,7 +125,7 @@ Window {
             onProfileClicked: { if (account.signedIn) win.goto("profile"); else win.authOpen = true }
             onSourceSelected: (id) => {
                 library.source = id
-                if (win.view === "profile" || win.view === "playlists") win.goto("songs")
+                if (win.view === "profile" || win.view === "playlists" || win.view === "friends" || win.view === "user" || win.view === "friendpl") win.goto("songs")
             }
             onAddServerRequested: win.addServerOpen = true
             onUpdateClicked: { settingsPanel.cat = "updates"; win.settingsOpen = true }
@@ -127,7 +140,10 @@ Window {
                 z: 5
                 spacing: 12
                 Text {
-                    text: library.filterKind !== "" ? "‹ " + library.filterName
+                    text: win.view === "friends" ? "Friends"
+                        : win.view === "user" ? "‹ " + (social.profile.name || social.profile.username || "Profile")
+                        : win.view === "friendpl" ? "‹ " + (social.playlist.name || "Playlist")
+                        : library.filterKind !== "" ? "‹ " + library.filterName
                         : (win.view === "albums" ? "Albums" : win.view === "artists" ? "Artists" : win.view === "playlists" ? "Playlists" : win.view === "profile" ? "Profile" : "Songs")
                     font.pixelSize: 28
                     font.weight: Font.DemiBold
@@ -136,9 +152,9 @@ Window {
                     width: Math.min(implicitWidth, parent.parent.width - 140)
                     MouseArea {
                         anchors.fill: parent
-                        enabled: library.filterKind !== ""
+                        enabled: library.filterKind !== "" || win.view === "user" || win.view === "friendpl"
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: win.goto(win.backView || "songs")
+                        onClicked: { if (win.view === "user" || win.view === "friendpl") win.back(); else win.goto(win.backView || "songs") }
                     }
                 }
                 Item {   // sort button, next to the "Songs" heading
@@ -179,6 +195,46 @@ Window {
                     }
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { win.promptPath = ""; prompt.visible = true } }
                 }
+                Row {   // Edit | Preview, on your own profile page
+                    visible: win.view === "profile" && account.signedIn
+                    anchors.verticalCenter: parent.verticalCenter
+                    Repeater {
+                        model: [{ k: "edit", t: "Edit" }, { k: "preview", t: "Preview" }]
+                        Rectangle {
+                            required property var modelData
+                            readonly property bool sel: win.profileMode === modelData.k
+                            width: 84; height: 32
+                            color: sel ? win.pri : "transparent"
+                            border.width: 1
+                            border.color: win.pri
+                            Text { anchors.centerIn: parent; text: parent.modelData.t; font.pixelSize: 13; color: parent.sel ? "white" : win.pri }
+                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: win.profileMode = parent.modelData.k }
+                        }
+                    }
+                }
+                Item {   // lets you list a playlist on your public profile
+                    visible: win.view === "songs" && library.filterKind === "playlist" && account.signedIn && win.currentPlaylist !== ""
+                    height: 36
+                    width: shareRow.implicitWidth + 24
+                    anchors.verticalCenter: parent.verticalCenter
+                    Row {
+                        id: shareRow
+                        anchors.centerIn: parent
+                        spacing: 8
+                        Icon { name: "cloud"; size: 18; color: win.pri }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: { playlists.revision; return playlists.isShared(win.currentPlaylist) ? "Shared on your profile" : "Share on your profile" }
+                            font.pixelSize: 13
+                            color: win.pri
+                        }
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: playlists.setShared(win.currentPlaylist, !playlists.isShared(win.currentPlaylist))
+                    }
+                }
                 Item {   // which source the list shows; only once you have added a server
                     id: srcChip
                     visible: servers.count > 0 && library.filterKind === "" && (win.view === "songs" || win.view === "albums" || win.view === "artists")
@@ -212,10 +268,33 @@ Window {
             }
 
             ProfilePage {
+                id: profilePage
                 visible: win.view === "profile"
+                editing: win.profileMode === "edit"
                 anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: 90 }
                 onSignInRequested: win.authOpen = true
                 onImageRequested: (kind) => { imagePopup.kind = kind; imagePopup.visible = true }
+            }
+            ProfilePreview {
+                visible: win.view === "profile" && win.profileMode === "preview" && account.signedIn
+                dirty: profilePage.dirty
+                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: 90 }
+            }
+            FriendsPage {
+                visible: win.view === "friends"
+                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: 90 }
+                onSignInRequested: win.authOpen = true
+                onOpenUser: (username) => win.openUser(username)
+                onOpenPlaylist: (pid, name, owner) => win.openFriendPlaylist(pid, name, owner, false)
+            }
+            PublicProfile {
+                visible: win.view === "user"
+                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: 90 }
+                onOpenPlaylist: (pid, name, owner) => win.openFriendPlaylist(pid, name, owner, true)
+            }
+            FriendPlaylist {
+                visible: win.view === "friendpl"
+                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: 90 }
             }
             SongList {
                 visible: win.view === "songs"
@@ -348,7 +427,7 @@ Window {
 
     IconButton {
         z: 10
-        visible: !win.settingsOpen
+        visible: !win.settingsOpen && win.view !== "friends" && win.view !== "user" && win.view !== "friendpl"
         anchors { right: parent.right; rightMargin: 76; top: parent.top; topMargin: 18 }
         name: "search"; box: 44; iconSize: 22
         onClicked: win.searchOpen = !win.searchOpen
@@ -466,5 +545,5 @@ Window {
     Shortcut { sequence: "Right"; enabled: !win.settingsOpen && !win.searchOpen && !prompt.visible && !imagePopup.visible && !win.authOpen && !win.addServerOpen && (win.expanded || win.view === "songs"); onActivated: player.seek(player.position + 5) }
     Shortcut { sequence: "N"; enabled: !win.settingsOpen && !win.searchOpen && !prompt.visible && !imagePopup.visible && !win.authOpen && !win.addServerOpen; onActivated: player.next() }
     Shortcut { sequence: "P"; enabled: !win.settingsOpen && !win.searchOpen && !prompt.visible && !imagePopup.visible && !win.authOpen && !win.addServerOpen; onActivated: player.prev() }
-    Shortcut { sequence: "Escape"; onActivated: { if (win.addServerOpen) win.addServerOpen = false; else if (win.authOpen) win.authOpen = false; else if (imagePopup.visible) imagePopup.visible = false; else if (prompt.visible) prompt.visible = false; else if (win.menuPath !== "") win.menuPath = ""; else if (win.sourceOpen) win.sourceOpen = false; else if (win.searchOpen) win.searchOpen = false; else if (win.settingsOpen) win.settingsOpen = false; else win.expanded = false } }
+    Shortcut { sequence: "Escape"; onActivated: { if (win.addServerOpen) win.addServerOpen = false; else if (win.authOpen) win.authOpen = false; else if (imagePopup.visible) imagePopup.visible = false; else if (prompt.visible) prompt.visible = false; else if (win.menuPath !== "") win.menuPath = ""; else if (win.sourceOpen) win.sourceOpen = false; else if (win.searchOpen) win.searchOpen = false; else if (win.settingsOpen) win.settingsOpen = false; else if (!win.expanded && (win.view === "user" || win.view === "friendpl")) win.back(); else win.expanded = false } }
 }
