@@ -55,18 +55,22 @@ jobs:
           cache: true
           cache-key-prefix: qt-host
 
-      - name: Qt for Android
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: ${{ env.QT_VERSION }}
-          host: linux
-          target: android
-          arch: android_arm64_v8a
-          modules: qtmultimedia
-          dir: ${{ github.workspace }}/qt
-          set-env: false
-          cache: true
-          cache-key-prefix: qt-android
+      - name: Qt for Android (libraries for the phone)
+        run: |
+          pip install --quiet aqtinstall
+          # since Qt 6.7 the Android packages are listed under "all_os"; try the older place as well
+          for host in all_os linux; do
+            echo "Trying host: $host"
+            if aqt install-qt "$host" android "$QT_VERSION" android_arm64_v8a -m qtmultimedia -O "$GITHUB_WORKSPACE/qt/Qt"; then
+              ok=1; break
+            fi
+          done
+          if [ -z "${ok:-}" ]; then
+            aqt list-qt all_os android --arch "$QT_VERSION" || true
+            aqt list-qt linux android --arch "$QT_VERSION" || true
+            exit 1
+          fi
+          ls "$GITHUB_WORKSPACE/qt/Qt/$QT_VERSION"
 
       - name: Android SDK and NDK
         run: |
