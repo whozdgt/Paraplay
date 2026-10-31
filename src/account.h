@@ -79,6 +79,7 @@ public:
 
 signals:
     void changed();
+    void signedUp(const QString &username);      // a brand-new account was just made
     void imageDone(const QString &kind, bool ok, const QString &text);
 
 private:

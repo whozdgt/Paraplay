@@ -268,6 +268,7 @@ void Account::signUp(const QString &username, const QString &password)
         if (!ok || d.object().value(QLatin1String("access_token")).toString().isEmpty()) { fail(friendly(apiError(d, st), true)); return; }
         m_username = u;
         storeSession(d.object());
+        emit signedUp(u);
         afterSignIn();
     }, false);
 }

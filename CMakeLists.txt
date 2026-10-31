@@ -53,7 +53,7 @@ qt_add_qml_module(musicplayer
     qml/CoverTile.qml qml/Field.qml qml/AddServerPanel.qml
     qml/PersonRow.qml qml/FollowButton.qml qml/Chip.qml qml/TwoColumns.qml qml/FriendsPage.qml
     qml/PublicProfile.qml qml/ProfilePreview.qml qml/FriendPlaylist.qml
-    qml/FolderPicker.qml qml/GalleryPicker.qml qml/LyricsView.qml)
+    qml/FolderPicker.qml qml/GalleryPicker.qml qml/LyricsView.qml qml/Welcome.qml)
 
 target_link_libraries(musicplayer PRIVATE
   Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Concurrent Qt6::Network)

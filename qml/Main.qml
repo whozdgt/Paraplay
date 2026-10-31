@@ -609,6 +609,10 @@ Window {
         onCloseRequested: win.authOpen = false
     }
 
+    // Confetti and a greeting after a new account is made. Above everything, takes no clicks.
+    Welcome { id: welcome; z: 100; anchors.fill: parent }
+    Connections { target: account; function onSignedUp(name) { welcome.play(name) } }
+
     AddServerPanel {
         id: addServer
         z: 59
