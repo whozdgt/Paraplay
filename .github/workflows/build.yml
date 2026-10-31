@@ -1,0 +1,44 @@
+name: build
+
+# Compiles the player on every push and pull request, so a mistake shows up here before it reaches anyone.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    container: archlinux:latest      # the same kind of system the player is made for (CachyOS / Arch)
+    steps:
+      - name: Install build tools
+        run: |
+          pm="pacman"
+          # containers sometimes lack the kernel feature pacman's sandbox needs
+          pacman --help 2>&1 | grep -q -- --disable-sandbox && pm="pacman --disable-sandbox"
+          $pm -Syu --noconfirm --needed base-devel cmake ninja git pkgconf \
+            qt6-base qt6-declarative qt6-svg qt6-shadertools qt6-wayland mpv taglib
+
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build -j"$(nproc)"
+
+      - name: Starts and exits (no display needed)
+        run: QT_QPA_PLATFORM=offscreen ./build/musicplayer --version
+
+      - name: Interface loads
+        continue-on-error: true      # a hint only: it can't test everything without a screen or a sound card
+        run: |
+          QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software timeout 8 ./build/musicplayer --music /tmp 2>&1 | tee ui.log || true
+          if grep -E "(qrc:|qml).*(error|Error|is not a type|Cannot assign|ReferenceError|TypeError)" ui.log; then
+            echo "::warning::The interface printed errors while loading (see log)"
+            exit 1
+          fi

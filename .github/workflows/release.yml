@@ -1,0 +1,38 @@
+name: release
+
+# Push a tag like v0.6.1 and this publishes a GitHub release. The player's "Update now" button
+# looks for the newest release, downloads that tag's source and builds it on the user's own computer.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the tag matches the version in CMakeLists.txt
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          ver="$(sed -n 's/^project(musicplayer VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)"
+          if [ "$tag" != "$ver" ]; then
+            echo "::error::Tag v$tag does not match the project version $ver in CMakeLists.txt"
+            exit 1
+          fi
+
+      - name: Take the release notes from CHANGES.md
+        run: |
+          # the newest section: from the first "# " heading to the next one
+          awk 'BEGIN{n=0} /^# /{n++; if(n==2) exit} n==1{print}' CHANGES.md | tail -n +2 > notes.md
+          [ -s notes.md ] || echo "See CHANGES.md for what changed." > notes.md
+          cat notes.md
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --title "Music ${GITHUB_REF_NAME}" --notes-file notes.md --verify-tag

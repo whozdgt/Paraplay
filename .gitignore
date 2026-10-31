@@ -1,0 +1,22 @@
+# build output
+build/
+build-*/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+*.o
+*.a
+.qt/
+.cache/
+compile_commands.json
+
+# editor / OS
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+
+# local files that must never be committed
+*.local
+.env

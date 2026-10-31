@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Music
+Comment=Lightweight FLAC and Hi-Res music player
+Exec=musicplayer
+Icon=audio-x-generic
+Categories=AudioVideo;Audio;Player;
+Terminal=false

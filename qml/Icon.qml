@@ -1,0 +1,44 @@
+import QtQuick
+import QtQuick.Shapes
+
+Item {
+    id: root
+    property string name
+    property color color: "black"
+    property real size: 22
+    readonly property bool filled: name === "play" || name === "pause"
+    readonly property var paths: ({
+        prev: "M19 20 9 12l10-8zM5 5v14",
+        next: "M5 4l10 8-10 8zM19 5v14",
+        play: "M6 4l14 8-14 8z",
+        pause: "M6 4h4v16H6zM14 4h4v16h-4z",
+        up: "M6 15l6-6 6 6",
+        down: "M6 9l6 6 6-6",
+        close: "M6 6l12 12M18 6 6 18",
+        sort: "M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4",
+        volume: "M4 9v6h4l5 4V5L8 9zM16 9a4 4 0 0 1 0 6",
+        search: "M18 11a7 7 0 1 1-14 0 7 7 0 0 1 14 0zM20 20l-4-4",
+        plus: "M12 5v14M5 12h14",
+        camera: "M4 8h4l2-3h4l2 3h4v11H4zM12 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z",
+        cloud: "M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z",
+        gear: "M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+    })
+    width: size
+    height: size
+
+    Shape {
+        width: 24
+        height: 24
+        scale: root.size / 24
+        transformOrigin: Item.TopLeft
+        preferredRendererType: Shape.CurveRenderer
+        ShapePath {
+            strokeColor: root.filled ? "transparent" : root.color
+            strokeWidth: root.filled ? -1 : 1.8
+            fillColor: root.filled ? root.color : "transparent"
+            capStyle: ShapePath.RoundCap
+            joinStyle: ShapePath.RoundJoin
+            PathSvg { path: root.paths[root.name] || "" }
+        }
+    }
+}

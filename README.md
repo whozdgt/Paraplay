@@ -1,0 +1,106 @@
+# Music: a lightweight FLAC / Hi-Res player (Qt Quick + libmpv)
+
+Native C++ and QML. No browser engine, no Python. Playback goes through libmpv, so FLAC, ALAC, WAV, MP3, AAC, OGG and OPUS (including 24-bit and 96/192 kHz files) are decoded by a mature engine, gaplessly.
+
+Square corners, frosted white glass, black text with a green accent, JetBrains Mono. Everything is free: there is nothing to unlock.
+
+## Install dependencies (CachyOS / Arch)
+
+    sudo pacman -S --needed base-devel cmake qt6-base qt6-declarative qt6-wayland mpv taglib ttf-jetbrains-mono
+
+Needs Qt 6.6 or newer and TagLib 1.13 or newer, both fine on current Arch.
+
+## Build and install
+
+    git clone https://github.com/whozdgt/Paraplay.git && cd Paraplay
+    ./update.sh --here
+
+That builds the player and installs it for your user (into `~/.local`, no `sudo`), with a launcher entry. Start it from your app launcher, or run `musicplayer --music ~/Music`.
+
+To just try it without installing:
+
+    cmake -B build -DCMAKE_BUILD_TYPE=Release
+    cmake --build build -j
+    ./build/musicplayer --music ~/Music
+
+The music folder is remembered after the first run. Change it in Settings → Directories (press Enter to scan). The library is cached on disk, so later starts only re-check changed files.
+
+## Updates
+
+Settings → Updates. The player asks GitHub for the newest release (at most twice a day, switch it off there) and shows "Update available" at the bottom of the sidebar. **Update now** downloads that release's source, builds it on your computer at low priority (music keeps playing) and installs it; then **Restart**. Building on your own machine means it always matches your Qt, mpv and TagLib. In-app updating works once the player was installed with `./update.sh --here`.
+
+Releases are made by pushing a tag such as `v0.6.1`; the version must match `project(musicplayer VERSION …)` in `CMakeLists.txt`. The release notes are the top section of `CHANGES.md`.
+
+## Your own server (Navidrome, Subsonic, Jellyfin)
+
+Sidebar → SOURCES → **Add a server…**, or Settings → Servers. Pick Navidrome / Subsonic or Jellyfin, enter the address, username and password.
+
+- Songs play as the **original files**, never re-encoded, with the same quality badges.
+- "All sources / This computer / your server" filters Songs, Albums and Artists. A small cloud marks streamed music.
+- The song list is saved on this computer so the library opens instantly; it refreshes on start and every few hours, or press Sync now.
+- Your password is not saved. Navidrome/Subsonic keeps a one-way sign-in token and Jellyfin an access token, in a private file only your user can read.
+- Servers on your own network with a self-signed certificate: turn on "Allow a self-signed certificate". The first certificate you accept is remembered and a different one later is refused.
+- Not built yet: WebDAV and plain web folders.
+
+## What works
+
+- Songs, Albums and Artists views; click a song to play, click an album or artist to filter. Cover Flow carousels.
+- Format column (e.g. `FLAC 24/96`), green marker on Hi-Res tracks, quality readout in the player bar and expanded player.
+- Local playlists. Search with suggestions.
+- Square cover or spinning record, frosted glass, album-colour glow, theme colours, all in Settings (gear, top right).
+- Lyrics from a `.lrc` file with the same name next to the song.
+- Media keys, `playerctl` and waybar media module (MPRIS).
+- Optional profile (username and password, no email) with playlist sync, profile picture and banner.
+- Keys: Space play/pause, Left/Right seek 5 s, N / P next / previous, Esc close panel.
+
+## Not built yet
+
+Spotify and YouTube Music (greyed out, "soon"), following other people and public profiles, shuffle/repeat, WebDAV / web-folder sources, the "Horizon" lyrics font (JetBrains Mono is used for now), a Windows build.
+
+## What goes online
+
+Nothing, unless you turn it on:
+
+- **Profile:** if you make an account, your username, profile text, playlists and pictures are stored in the project's Supabase database. Your music files never leave your computer.
+- **Artist pictures:** artist names are sent to Deezer to find a photo (Settings → Customisation switches it off).
+- **Updates:** a request to GitHub's releases page.
+- **Servers:** only the servers you add.
+
+## Hyprland
+
+- Blur: the app draws a translucent window and Hyprland blurs behind it, as long as blur is enabled (`decoration { blur { enabled = true } }`, on by default).
+- Square corners: Hyprland rounds windows itself. To keep the boxy look, add a rule for class `musicplayer` setting rounding to 0. Window-rule syntax changed between Hyprland releases, so check the wiki for your version (older form: `windowrulev2 = rounding 0, class:^(musicplayer)$`).
+
+## Hi-Res / bit-perfect
+
+The player asks for the file's own sample rate, but PipeWire decides what the sound card actually runs at, and by default it resamples everything to one fixed rate. To let it follow your files, create `~/.config/pipewire/pipewire.conf.d/10-hires.conf`:
+
+    context.properties = {
+        default.clock.allowed-rates = [ 44100 48000 88200 96000 176400 192000 ]
+    }
+
+then `systemctl --user restart pipewire pipewire-pulse wireplumber`.
+
+- **Bit-perfect output** (Settings → Audio): when on, no ReplayGain or volume changes are applied.
+- **Match track sample rate:** when off, output is forced to 48 kHz. It takes effect on the next start.
+
+## Memory notes
+
+Idle cost is the Qt Quick runtime, libmpv with small demuxer buffers (4 MiB local, 16 MiB for streams), and one track list shared by your folder and your servers (a few MB for tens of thousands of tracks). While you search, only the chosen cover stays loaded. Animations only run while a song plays and the record cover is selected. Check with `ps -o rss,cmd -C musicplayer`.
+
+## Licence
+
+The player's own code is under the [MIT licence](LICENSE).
+
+It uses other projects under their own licences, which matter if you ever ship a build to someone else:
+
+- **Qt 6** (LGPLv3 / GPLv3 / commercial). Linking it dynamically, as the Linux build does, is the simple case. Windows, Android and iOS need extra care (shipping the Qt libraries, allowing them to be replaced; the iOS App Store makes that hard).
+- **libmpv** (LGPLv2.1+ or GPLv2+, depending on how mpv was built). A GPL build of mpv makes a combined binary GPL.
+- **TagLib** (LGPLv2.1 / MPLv1.1).
+- **JetBrains Mono** (SIL Open Font Licence).
+
+This is a summary, not legal advice. Check the licences before distributing binaries, especially for mobile.
+
+## Windows
+
+The code is portable (libmpv and TagLib exist on Windows; media-key support is Linux-only and skipped automatically). A Windows build is not set up yet.
