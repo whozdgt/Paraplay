@@ -521,6 +521,11 @@ Window {
         anchors { left: parent.left; leftMargin: 6; top: parent.top; topMargin: 6 }
         name: "menu"; box: 44; iconSize: 24
         onClicked: win.drawerOpen = true
+        Rectangle {      // a newer build is waiting: the menu has the "Update available" chip
+            visible: updater.available
+            width: 10; height: 10; radius: 5; color: settings.accent
+            anchors { right: parent.right; rightMargin: 6; top: parent.top; topMargin: 6 }
+        }
     }
 
     IconButton {      // phone: closes the search box

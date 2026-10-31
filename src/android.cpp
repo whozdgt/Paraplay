@@ -45,5 +45,65 @@ void askForAudio()
     env->DeleteLocalRef(stringClass);
 }
 
+namespace {
+QString packageName(const QJniObject &ctx) { return ctx.callObjectMethod("getPackageName", "()Ljava/lang/String;").toString(); }
+void clearException()
+{
+    QJniEnvironment env;
+    if (env->ExceptionCheck()) { env->ExceptionDescribe(); env->ExceptionClear(); }
+}
+} // namespace
+
+bool canInstallApks()
+{
+    const QJniObject ctx = QNativeInterface::QAndroidApplication::context();
+    if (!ctx.isValid() || sdkInt() < 26) return true;
+    const QJniObject pm = ctx.callObjectMethod("getPackageManager", "()Landroid/content/pm/PackageManager;");
+    const bool ok = pm.callMethod<jboolean>("canRequestPackageInstalls", "()Z");
+    clearException();
+    return ok;
+}
+
+void askInstallApks()
+{
+    const QJniObject ctx = QNativeInterface::QAndroidApplication::context();
+    if (!ctx.isValid()) return;
+    const QJniObject action = QJniObject::fromString(QStringLiteral("android.settings.MANAGE_UNKNOWN_APP_SOURCES"));
+    QJniObject intent("android/content/Intent", "(Ljava/lang/String;)V", action.object<jstring>());
+    const QJniObject uriText = QJniObject::fromString(QStringLiteral("package:") + packageName(ctx));
+    const QJniObject uri = QJniObject::callStaticObjectMethod("android/net/Uri", "parse", "(Ljava/lang/String;)Landroid/net/Uri;",
+                                                              uriText.object<jstring>());
+    intent.callObjectMethod("setData", "(Landroid/net/Uri;)Landroid/content/Intent;", uri.object());
+    intent.callObjectMethod("addFlags", "(I)Landroid/content/Intent;", jint(0x10000000));       // FLAG_ACTIVITY_NEW_TASK
+    ctx.callMethod<void>("startActivity", "(Landroid/content/Intent;)V", intent.object());
+    clearException();
+}
+
+bool installApk(const QString &path)
+{
+    const QJniObject ctx = QNativeInterface::QAndroidApplication::context();
+    if (!ctx.isValid()) return false;
+    // Android won't hand a bare file path to the installer; it has to go through the app's FileProvider.
+    const QJniObject file("java/io/File", "(Ljava/lang/String;)V", QJniObject::fromString(path).object<jstring>());
+    const QJniObject authority = QJniObject::fromString(packageName(ctx) + QStringLiteral(".qtprovider"));
+    const QJniObject uri = QJniObject::callStaticObjectMethod(
+        "androidx/core/content/FileProvider", "getUriForFile",
+        "(Landroid/content/Context;Ljava/lang/String;Ljava/io/File;)Landroid/net/Uri;",
+        ctx.object(), authority.object<jstring>(), file.object());
+    if (!uri.isValid()) { clearException(); return false; }
+    const QJniObject action = QJniObject::fromString(QStringLiteral("android.intent.action.VIEW"));
+    QJniObject intent("android/content/Intent", "(Ljava/lang/String;)V", action.object<jstring>());
+    const QJniObject mime = QJniObject::fromString(QStringLiteral("application/vnd.android.package-archive"));
+    intent.callObjectMethod("setDataAndType", "(Landroid/net/Uri;Ljava/lang/String;)Landroid/content/Intent;",
+                            uri.object(), mime.object<jstring>());
+    // FLAG_GRANT_READ_URI_PERMISSION | FLAG_ACTIVITY_NEW_TASK
+    intent.callObjectMethod("addFlags", "(I)Landroid/content/Intent;", jint(0x1 | 0x10000000));
+    ctx.callMethod<void>("startActivity", "(Landroid/content/Intent;)V", intent.object());
+    QJniEnvironment env;
+    const bool failed = env->ExceptionCheck();
+    clearException();
+    return !failed;
+}
+
 } // namespace android
 #endif

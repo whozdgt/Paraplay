@@ -281,7 +281,7 @@ Rectangle {
                     width: parent.width
                     visible: root.cat === "updates"
                     SectionLabel { text: "VERSION" }
-                    Text { text: "Music " + updater.current; font.pixelSize: 14; color: root.pri }
+                    Text { text: (Qt.platform.os === "android" ? "Paraplay " : "Music ") + updater.current; font.pixelSize: 14; color: root.pri }
                     Text {
                         visible: updater.status !== ""
                         Layout.fillWidth: true; wrapMode: Text.Wrap; font.pixelSize: 12; color: root.muted
@@ -289,7 +289,7 @@ Rectangle {
                     }
                     ToggleRow {
                         label: "Check for updates on start"
-                        note: "Asks GitHub for the newest version, at most twice a day"
+                        note: Qt.platform.os === "android" ? "Asks GitHub for a newer build, at most once an hour" : "Asks GitHub for the newest version, at most twice a day"
                         checked: settings.autoUpdateCheck
                         onToggled: settings.autoUpdateCheck = !settings.autoUpdateCheck
                     }
@@ -311,8 +311,13 @@ Rectangle {
                         text: updater.configured ? "To update from inside the player, install it once with ./update.sh --here from the project folder."
                                                  : "This build isn't linked to a release page yet."
                     }
+                    Rectangle {
+                        visible: updater.installing && Qt.platform.os === "android"
+                        Layout.fillWidth: true; height: 4; color: Qt.rgba(1, 1, 1, 0.12)
+                        Rectangle { width: parent.width * updater.progress; height: parent.height; color: settings.accent }
+                    }
                     Text {
-                        visible: updater.installing
+                        visible: updater.installing && Qt.platform.os !== "android"
                         Layout.fillWidth: true; wrapMode: Text.Wrap; font.pixelSize: 10; lineHeight: 1.4; color: root.muted
                         text: "The new version is built on this computer at low priority, so music keeps playing. This can take a few minutes."
                     }

@@ -72,6 +72,8 @@ if(ANDROID)
     QT_ANDROID_VERSION_NAME "${PROJECT_VERSION}"
     QT_ANDROID_VERSION_CODE "${ANDROID_VERSION_CODE}"
     QT_ANDROID_TARGET_SDK_VERSION 34)
+  # The app compares this with the newest published build to know whether an update exists.
+  target_compile_definitions(musicplayer PRIVATE PARAPLAY_BUILD=${ANDROID_VERSION_CODE})
 
   # Qt needs OpenSSL next to the app for https (sign-in, servers, updates). The workflow downloads it.
   if(ANDROID_OPENSSL_DIR)

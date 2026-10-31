@@ -4,13 +4,17 @@ name: android
 #  - every push to main and every pull request: builds it, so a mistake shows up here, and keeps the APK for 14 days
 #    (open the run, scroll to "Artifacts")
 #  - a version tag like v0.7.0: also attaches the APK to that release
+#  - every push to main (when signed with your own key, see below): publishes the APK as the "android-latest" release.
+#    That is what the app's "Update now" button downloads, and you can also install it from that release page.
 #
-# Signing: an APK must be signed before a phone will install it. Without secrets, each build is signed with a new
-# throwaway key, which works, but Android then refuses to update over the previous install (uninstall first).
-# To fix that once, add these repository secrets (Settings > Secrets and variables > Actions):
-#   ANDROID_KEYSTORE_BASE64   the .jks file, base64 encoded
-#   ANDROID_KEY_ALIAS         the key's alias
-#   ANDROID_KEYSTORE_PASSWORD the password (used for the key too)
+# Signing: an APK must be signed before a phone will install it, and Android only lets an update replace an install
+# that was signed with the SAME key. So add this repository secret once (Settings > Secrets and variables > Actions):
+#   ANDROID_KEYSTORE_BASE64   the .jks key file, base64 encoded
+# Optional (these defaults match the key file made for this project):
+#   ANDROID_KEY_ALIAS         the key's alias (default: paraplay)
+#   ANDROID_KEYSTORE_PASSWORD the password, also used for the key (default: paraplay-release)
+# Without the secret, each build is signed with a new throwaway key. That installs, but can't update an earlier
+# install, and it is never published as an update.
 on:
   push:
     branches: [main]
@@ -146,10 +150,12 @@ jobs:
           echo "Built: $src"
           if [ -n "$KS_B64" ]; then
             echo "$KS_B64" | base64 -d > release.jks
-            alias="$KS_ALIAS"; pass="$KS_PASS"
+            alias="${KS_ALIAS:-paraplay}"; pass="${KS_PASS:-paraplay-release}"
+            echo "real=true" >> "$GITHUB_OUTPUT"
             echo "Signing with your own key."
           else
             pass="paraplay-throwaway"; alias="paraplay"
+            echo "real=false" >> "$GITHUB_OUTPUT"
             keytool -genkeypair -keystore release.jks -alias "$alias" -storepass "$pass" -keypass "$pass" \
               -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Paraplay build"
             echo "No signing secrets set: signed with a throwaway key (see the top of this file)."
@@ -160,6 +166,7 @@ jobs:
           "$bt/apksigner" verify --print-certs "Paraplay-${ver}-arm64.apk"
           rm -f release.jks
           echo "apk=Paraplay-${ver}-arm64.apk" >> "$GITHUB_OUTPUT"
+          echo "ver=${ver}" >> "$GITHUB_OUTPUT"
           ls -l Paraplay-*.apk
 
       - uses: actions/upload-artifact@v4
@@ -179,3 +186,30 @@ jobs:
             sleep 10
           done
           gh release upload "$GITHUB_REF_NAME" "${{ steps.sign.outputs.apk }}" --clobber
+
+      # The rolling "android-latest" release: the app reads latest.json to see whether a newer build exists,
+      # then downloads Paraplay-android.apk. It is a pre-release, so it never counts as the desktop's "latest release".
+      - name: Publish as the newest build (for in-app updates)
+        if: >-
+          steps.sign.outputs.real == 'true' && github.ref == 'refs/heads/main' &&
+          (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ github.run_number }}
+          VER: ${{ steps.sign.outputs.ver }}
+        run: |
+          cp "${{ steps.sign.outputs.apk }}" Paraplay-android.apk
+          sha="$(sha256sum Paraplay-android.apk | cut -d' ' -f1)"
+          # a slower, older run must not replace a newer build
+          cur="$(curl -fsSL "https://github.com/${GITHUB_REPOSITORY}/releases/download/android-latest/latest.json" 2>/dev/null | jq -r '.build // 0' 2>/dev/null || true)"
+          [[ "$cur" =~ ^[0-9]+$ ]] || cur=0
+          if [ "$cur" -ge "$RUN" ]; then echo "Build $cur is already published; skipping build $RUN."; exit 0; fi
+          notes="$(git log -1 --pretty=%B | head -c 600)"
+          jq -n --argjson build "$RUN" --arg version "$VER" --arg sha "$sha" --arg notes "$notes" \
+            '{build:$build, version:$version, sha256:$sha, notes:$notes}' > latest.json
+          cat latest.json
+          gh release delete android-latest --cleanup-tag --yes || true
+          gh release create android-latest Paraplay-android.apk latest.json \
+            --prerelease --target "$GITHUB_SHA" \
+            --title "Paraplay for Android: newest build" \
+            --notes "Build ${RUN} (version ${VER}). Install this APK on your phone, or tap Update now in the app (Settings, Updates). The app finds it by itself."

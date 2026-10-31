@@ -13,7 +13,7 @@ sys.path.insert(0, HERE)
 import icon  # noqa: E402
 from playwright.sync_api import sync_playwright  # noqa: E402
 
-ADAPTIVE_SCALE = 0.70      # keeps the headphones inside the part every launcher mask leaves visible
+ADAPTIVE_SCALE = 0.80      # keeps the bars inside the part every launcher mask leaves visible
 LEGACY = {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}
 ADAPTIVE = {"mdpi": 108, "hdpi": 162, "xhdpi": 216, "xxhdpi": 324, "xxxhdpi": 432}
 DESKTOP = (48, 64, 128, 256, 512)

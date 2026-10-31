@@ -21,3 +21,5 @@ compile_commands.json
 *.local
 .env
 __pycache__/
+*.jks
+*.keystore
