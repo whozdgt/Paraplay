@@ -122,7 +122,7 @@ Rectangle {
                     Rectangle {
                         visible: Qt.platform.os !== "android"
                         Layout.fillWidth: true; Layout.preferredHeight: 36
-                        color: Qt.rgba(1, 1, 1, 0.6); border.width: 1
+                        color: (settings.dark ? Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.05) : Qt.rgba(1, 1, 1, 0.6)); border.width: 1
                         border.color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.3)
                         TextInput {
                             anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
@@ -147,7 +147,7 @@ Rectangle {
                     Text { Layout.fillWidth: true; font.pixelSize: 12; color: root.muted; wrapMode: Text.Wrap; text: "Keep together (one name per line):" }
                     Rectangle {
                         Layout.fillWidth: true; Layout.preferredHeight: 110; Layout.topMargin: 4
-                        color: Qt.rgba(1, 1, 1, 0.6); border.width: 1
+                        color: (settings.dark ? Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.05) : Qt.rgba(1, 1, 1, 0.6)); border.width: 1
                         border.color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.3)
                         Flickable {
                             anchors { fill: parent; margins: 8 }
@@ -179,7 +179,7 @@ Rectangle {
                             Layout.fillWidth: true
                             Layout.topMargin: 10
                             Layout.preferredHeight: inner.implicitHeight + 24
-                            color: Qt.rgba(1, 1, 1, 0.6)
+                            color: (settings.dark ? Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.05) : Qt.rgba(1, 1, 1, 0.6))
                             ColumnLayout {
                                 id: inner
                                 anchors { left: parent.left; right: parent.right; top: parent.top; margins: 12 }

@@ -136,13 +136,13 @@ Flickable {
             SectionLabel { text: "DISPLAY NAME" }
             Rectangle {
                 Layout.fillWidth: true; Layout.preferredHeight: 40
-                color: Qt.rgba(1, 1, 1, 0.6); border.width: 1; border.color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.3)
+                color: (settings.dark ? Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.05) : Qt.rgba(1, 1, 1, 0.6)); border.width: 1; border.color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.3)
                 TextInput { id: nameIn; anchors { fill: parent; leftMargin: 10; rightMargin: 10 } verticalAlignment: TextInput.AlignVCenter; clip: true; selectByMouse: true; maximumLength: 40; font.pixelSize: 14; color: root.pri }
             }
             SectionLabel { text: "BIO" }
             Rectangle {
                 Layout.fillWidth: true; Layout.preferredHeight: 40
-                color: Qt.rgba(1, 1, 1, 0.6); border.width: 1; border.color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.3)
+                color: (settings.dark ? Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.05) : Qt.rgba(1, 1, 1, 0.6)); border.width: 1; border.color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.3)
                 TextInput { id: bioIn; anchors { fill: parent; leftMargin: 10; rightMargin: 10 } verticalAlignment: TextInput.AlignVCenter; clip: true; selectByMouse: true; maximumLength: 160; font.pixelSize: 14; color: root.pri }
             }
 

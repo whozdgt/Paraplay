@@ -8,6 +8,8 @@ Rectangle {
     property bool drawer: false          // phone: slides over the page, so it needs a solid background
     signal select(string v)
     signal profileClicked()
+    signal socialSelected(string tab)       // activity | find | requests
+    property string socialTab: "activity"
     signal sourceSelected(string id)       // "" = all sources, "local", or a server id
     signal addServerRequested()
     signal updateClicked()
@@ -60,19 +62,39 @@ Rectangle {
                 NavItem { width: parent.width; sub: true; text: "Albums"; active: root.view === "albums"; onClicked: root.select("albums") }
                 NavItem { width: parent.width; sub: true; text: "Artists"; active: root.view === "artists"; onClicked: root.select("artists") }
                 NavItem { width: parent.width; sub: true; text: "Playlists"; active: root.view === "playlists"; onClicked: root.select("playlists") }
-                NavItem {
-                    width: parent.width; sub: true; text: "Friends"
-                    active: root.view === "friends" || root.view === "user" || root.view === "friendpl"
-                    onClicked: root.select("friends")
-                    Rectangle {      // follow requests waiting for you
-                        visible: social.requestCount > 0
-                        anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
-                        width: Math.max(18, cnt.implicitWidth + 10); height: 18
-                        color: settings.accent
-                        Text { id: cnt; anchors.centerIn: parent; text: social.requestCount; font.pixelSize: 11; color: "white" }
-                    }
+            }
+            Text {
+                text: "SOCIAL"
+                font.pixelSize: 11
+                font.letterSpacing: 1
+                color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.72)
+                leftPadding: 12
+                topPadding: 22
+                bottomPadding: 6
+            }
+            NavItem {
+                width: parent.width; text: "Friends"
+                active: (root.view === "friends" && root.socialTab === "activity") || root.view === "user" || root.view === "friendpl"
+                onClicked: root.socialSelected("activity")
+            }
+            NavItem {
+                width: parent.width; text: "Find people"
+                active: root.view === "friends" && root.socialTab === "find"
+                onClicked: root.socialSelected("find")
+            }
+            NavItem {
+                width: parent.width; text: "Requests"
+                active: root.view === "friends" && root.socialTab === "requests"
+                onClicked: root.socialSelected("requests")
+                Rectangle {      // follow requests waiting for you
+                    visible: social.requestCount > 0
+                    anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                    width: Math.max(18, cnt.implicitWidth + 10); height: 18
+                    color: settings.accent
+                    Text { id: cnt; anchors.centerIn: parent; text: social.requestCount; font.pixelSize: 11; color: "white" }
                 }
             }
+            NavItem { width: parent.width; text: "My profile"; active: root.view === "profile"; onClicked: root.profileClicked() }
             Text {
                 text: "SOURCES"
                 font.pixelSize: 11

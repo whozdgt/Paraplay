@@ -79,6 +79,16 @@ int main(int argc, char *argv[])
         : st.value("musicDir", QStandardPaths::writableLocation(QStandardPaths::MusicLocation)).toString();
     settings->insert("bgColor", QVariant::fromValue(QColor(st.value("bgColor", "#f3f0f5").toString())));
     settings->insert("musicDir", dir);
+    // "dark" = the page is a dark, solid colour (always on a phone), so light see-through panels would look grey
+    const auto isDark = [settings]() {
+#ifdef Q_OS_ANDROID
+        const bool solid = true;
+#else
+        const bool solid = !settings->value("frosted").toBool();
+#endif
+        return solid && settings->value("bgColor").value<QColor>().lightnessF() < 0.5;
+    };
+    settings->insert("dark", isDark());
 
     Library library;
     FolderBrowser folders;
@@ -105,6 +115,7 @@ int main(int argc, char *argv[])
 
     QObject::connect(settings, &QQmlPropertyMap::valueChanged, &app, [&](const QString &k, const QVariant &v) {
         st.setValue(k, v.typeId() == QMetaType::QColor ? QVariant(v.value<QColor>().name()) : v);
+        if (k == "bgColor" || k == "frosted") settings->insert("dark", isDark());
         if (k == "bitPerfect") player.setBitPerfect(v.toBool());
         if (k == "musicDir") library.scan(v.toString());
         if (k == "volume") player.setVolume(v.toInt());

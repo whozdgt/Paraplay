@@ -11,6 +11,7 @@ Flickable {
     readonly property bool anyCount: p.followers >= 0 || p.following >= 0 || p.playlistCount >= 0
     readonly property color pri: settings.primary
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
+    readonly property bool compact: col.width < 560      // phone: buttons go under the name instead of beside it
     property string menu: ""              // "" | "main" | "report"
     property bool confirmBlock: false
 
@@ -86,7 +87,7 @@ Flickable {
                 id: head
                 z: 5
                 width: parent.width
-                height: 96
+                height: root.compact && root.p.self !== true ? 96 + 44 : 96
 
                 Rectangle {
                     id: frame
@@ -97,18 +98,18 @@ Flickable {
                 }
                 Column {
                     x: 100; y: 8
-                    width: parent.width - 100 - actionsRow.width - 12
+                    width: root.compact ? parent.width - 100 : parent.width - 100 - actionsRow.width - 12
                     Text {
                         width: parent.width
                         text: root.p.name || ""
                         elide: Text.ElideRight
                         font.pixelSize: 22; font.weight: Font.DemiBold; color: root.pri
                     }
-                    Row {
+                    Flow {
+                        width: parent.width
                         spacing: 8
-                        Text { anchors.verticalCenter: parent.verticalCenter; text: "@" + (root.p.username || ""); font.pixelSize: 13; color: root.muted }
+                        Text { height: 18; verticalAlignment: Text.AlignVCenter; text: "@" + (root.p.username || ""); font.pixelSize: 13; color: root.muted }
                         Rectangle {
-                            anchors.verticalCenter: parent.verticalCenter
                             readonly property bool pub: root.p.visibility === "public"
                             width: tag.implicitWidth + 12; height: 18
                             color: pub ? root.pri : "transparent"
@@ -121,7 +122,10 @@ Flickable {
                 Row {
                     id: actionsRow
                     visible: root.p.self !== true
-                    anchors { right: parent.right; top: parent.top; topMargin: 8 }
+                    anchors.left: root.compact ? parent.left : undefined
+                    anchors.right: root.compact ? undefined : parent.right
+                    anchors.top: parent.top
+                    anchors.topMargin: root.compact ? 100 : 8
                     spacing: 8
                     opacity: root.p.preview === true ? 0.5 : 1
                     FollowButton { person: root.p; enabled: root.p.preview !== true }
@@ -189,7 +193,7 @@ Flickable {
                 visible: root.p.locked === true
                 width: parent.width
                 height: lockCol.implicitHeight + 56
-                color: Qt.rgba(1, 1, 1, 0.6)
+                color: (settings.dark ? Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.05) : Qt.rgba(1, 1, 1, 0.6))
                 Column {
                     id: lockCol
                     anchors.centerIn: parent

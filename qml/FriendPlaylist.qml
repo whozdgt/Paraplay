@@ -59,7 +59,7 @@ Item {
             y: by.height + 14
             width: parent.width
             height: 64
-            color: Qt.rgba(1, 1, 1, 0.6)
+            color: (settings.dark ? Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.05) : Qt.rgba(1, 1, 1, 0.6))
             Column {
                 x: 16
                 anchors.verticalCenter: parent.verticalCenter
@@ -100,7 +100,7 @@ Item {
                 readonly property bool current: modelData.matched === true && player.path === social.matchedPaths()[modelData.row]
                 width: ListView.view.width
                 height: 46
-                color: current ? Qt.rgba(1, 1, 1, 0.65) : (ma.containsMouse && modelData.matched ? Qt.rgba(1, 1, 1, 0.3) : "transparent")
+                color: current ? (settings.dark ? Qt.rgba(settings.accent.r, settings.accent.g, settings.accent.b, 0.2) : Qt.rgba(1, 1, 1, 0.65)) : (ma.containsMouse && modelData.matched ? (settings.dark ? Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.08) : Qt.rgba(1, 1, 1, 0.3)) : "transparent")
                 opacity: modelData.matched ? 1 : 0.5
                 Rectangle { visible: row.current; width: 3; height: parent.height; color: settings.accent }
                 RowLayout {

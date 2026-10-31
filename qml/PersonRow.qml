@@ -11,7 +11,7 @@ Rectangle {
     readonly property color pri: settings.primary
 
     height: small ? 52 : 62
-    color: ma.containsMouse ? Qt.rgba(1, 1, 1, 0.55) : Qt.rgba(1, 1, 1, 0.35)
+    color: ma.containsMouse ? (settings.dark ? Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.12) : Qt.rgba(1, 1, 1, 0.55)) : (settings.dark ? Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.07) : Qt.rgba(1, 1, 1, 0.35))
 
     MouseArea { id: ma; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.opened() }
     Avatar {

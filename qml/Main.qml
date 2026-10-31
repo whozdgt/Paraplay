@@ -177,6 +177,8 @@ Window {
             anchors { top: parent.top; bottom: parent.bottom }
             view: win.view
             onSelect: (v) => win.navigate(v)
+            socialTab: friendsPage.tab
+            onSocialSelected: (tab) => { win.navigate("friends"); friendsPage.tab = tab; if (tab === "find") Qt.callLater(friendsPage.focusSearch) }
             onProfileClicked: { win.drawerOpen = false; if (account.signedIn) win.navigate("profile"); else win.authOpen = true }
             onSourceSelected: (id) => {
                 win.drawerOpen = false
@@ -358,6 +360,7 @@ Window {
                 anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: win.contentTop }
             }
             FriendsPage {
+                id: friendsPage
                 visible: win.view === "friends"
                 anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: win.contentTop }
                 onSignInRequested: win.authOpen = true

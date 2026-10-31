@@ -16,11 +16,12 @@ Item {
         id: strip
         x: root.gut
         width: parent.width - 2 * root.gut
-        height: 28
+        height: Math.max(28, stripText.implicitHeight + 14)
         color: settings.primary
         Text {
+            id: stripText
             anchors { left: parent.left; leftMargin: 14; right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-            elide: Text.ElideRight
+            wrapMode: Text.Wrap
             font.pixelSize: 12
             color: "white"
             text: "Previewing your " + (account.visibility === "public" ? "Public" : "Private") + " profile as a stranger would see it. "
