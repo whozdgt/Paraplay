@@ -144,34 +144,41 @@ jobs:
 
       - name: Attach to the release
         if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          export PATH="$PATH:/c/Program Files/GitHub CLI"      # the MSYS2 shell doesn't know where gh is
+          $ver = (Select-String -Path CMakeLists.txt -Pattern '^project\(musicplayer VERSION ([0-9.]+)').Matches[0].Groups[1].Value
           # the release workflow creates the release a moment after the tag; wait for it
-          for i in $(seq 1 30); do
-            gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1 && break
-            sleep 10
-          done
-          gh release upload "$GITHUB_REF_NAME" Paraplay-Setup.exe "Paraplay-${VER}-windows-x64.zip" --clobber
+          for ($i = 0; $i -lt 30; $i++) {
+            gh release view $env:GITHUB_REF_NAME *> $null
+            if ($LASTEXITCODE -eq 0) { break }
+            Start-Sleep -Seconds 10
+          }
+          $out = gh release upload $env:GITHUB_REF_NAME Paraplay-Setup.exe "Paraplay-$ver-windows-x64.zip" --clobber 2>&1
+          if ($LASTEXITCODE -ne 0) { Write-Host "::error title=attach failed::$($out -join '%0A')"; exit 1 }
 
       # The rolling "windows-latest" pre-release (a pre-release never counts as the desktop's "latest release").
       - name: Publish as the newest build
         if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
           RUN: ${{ github.run_number }}
         run: |
-          export PATH="$PATH:/c/Program Files/GitHub CLI"      # the MSYS2 shell doesn't know where gh is
-          sha="$(sha256sum Paraplay-Setup.exe | cut -d' ' -f1)"
+          $ver = (Select-String -Path CMakeLists.txt -Pattern '^project\(musicplayer VERSION ([0-9.]+)').Matches[0].Groups[1].Value
+          $sha = (Get-FileHash Paraplay-Setup.exe -Algorithm SHA256).Hash.ToLower()
           # a slower, older run must not replace a newer build
-          cur="$(curl -fsSL "https://github.com/${GITHUB_REPOSITORY}/releases/download/windows-latest/latest.json" 2>/dev/null | sed -n 's/.*"build": *\([0-9]*\).*/\1/p' | head -1 || true)"
-          [[ "$cur" =~ ^[0-9]+$ ]] || cur=0
-          if [ "$cur" -ge "$RUN" ]; then echo "Build $cur is already published; skipping build $RUN."; exit 0; fi
-          printf '{"build": %s, "version": "%s", "sha256": "%s"}\n' "$RUN" "$VER" "$sha" > latest.json
-          cat latest.json
-          gh release delete windows-latest --cleanup-tag --yes || true
-          gh release create windows-latest Paraplay-Setup.exe "Paraplay-${VER}-windows-x64.zip" latest.json \
-            --prerelease --target "$GITHUB_SHA" \
-            --title "Paraplay for Windows: newest build" \
-            --notes "Build ${RUN} (version ${VER}). Download Paraplay-Setup.exe and run it, or unzip the portable zip anywhere. Windows may say the publisher is unknown the first time: choose More info, then Run anyway."
+          $cur = 0
+          try {
+            $j = Invoke-RestMethod "https://github.com/$env:GITHUB_REPOSITORY/releases/download/windows-latest/latest.json"
+            $cur = [int]$j.build
+          } catch { $cur = 0 }
+          if ($cur -ge [int]$env:RUN) { Write-Host "Build $cur is already published; skipping build $env:RUN."; exit 0 }
+          @{ build = [int]$env:RUN; version = $ver; sha256 = $sha } | ConvertTo-Json | Set-Content -Encoding utf8 latest.json
+          Get-Content latest.json
+          gh release delete windows-latest --cleanup-tag --yes *> $null
+          $notes = "Build $($env:RUN) (version $ver). Download Paraplay-Setup.exe and run it, or unzip the portable zip anywhere. Windows may say the publisher is unknown the first time: choose More info, then Run anyway."
+          $out = gh release create windows-latest Paraplay-Setup.exe "Paraplay-$ver-windows-x64.zip" latest.json --prerelease --target $env:GITHUB_SHA --title "Paraplay for Windows: newest build" --notes $notes 2>&1
+          if ($LASTEXITCODE -ne 0) { Write-Host "::error title=publish failed::$($out -join '%0A')"; exit 1 }
+          Write-Host ($out -join "`n")
