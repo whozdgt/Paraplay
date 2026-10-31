@@ -8,22 +8,16 @@ Item {
     property bool lyricsOpen: false
     readonly property bool lyricsMode: phone && settings.lyrics && lyricsOpen
     readonly property color boxBg: settings.solid ? settings.boxHover : Qt.rgba(1, 1, 1, 0.5)
+    readonly property bool lyricsButton: phone && settings.lyrics
+    readonly property real extra: lyricsButton ? 66 : 0     // room taken by the lyrics button under the controls
     readonly property real availW: (settings.lyrics && !phone) ? width - 380 : width
     readonly property color pri: settings.primary
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
 
     IconButton {
         anchors { left: parent.left; leftMargin: 20; top: parent.top; topMargin: 18 }
-        name: "down"; box: 44; iconSize: 22; bg: root.boxBg
+        name: "down"; box: 44; iconSize: 22
         onClicked: root.collapse()
-    }
-    IconButton {
-        visible: root.phone && settings.lyrics
-        anchors { right: parent.right; rightMargin: 20; top: parent.top; topMargin: 18 }
-        name: "lyrics"; box: 44; iconSize: 22
-        bg: root.lyricsMode ? root.pri : root.boxBg
-        fg: root.lyricsMode ? "white" : root.pri
-        onClicked: root.lyricsOpen = !root.lyricsOpen
     }
 
     ColumnLayout {
@@ -35,7 +29,7 @@ Item {
         Cover {
             visible: !root.lyricsMode
             Layout.alignment: Qt.AlignHCenter
-            Layout.preferredWidth: Math.max(140, Math.min(300, root.height - 340, root.availW - 64))
+            Layout.preferredWidth: Math.max(140, Math.min(300, root.height - 340 - root.extra, root.availW - 64))
             Layout.preferredHeight: Layout.preferredWidth
             source: player.coverSource
             record: settings.recordCover
@@ -46,7 +40,7 @@ Item {
             visible: root.lyricsMode
             Layout.alignment: Qt.AlignHCenter
             Layout.preferredWidth: root.availW - 32
-            Layout.preferredHeight: Math.max(140, root.height - 410)
+            Layout.preferredHeight: Math.max(140, root.height - 410 - root.extra)
             centered: true
             fontSize: 18
         }
@@ -79,6 +73,23 @@ Item {
             IconButton { name: "prev"; box: 44; iconSize: 22; onClicked: player.prev() }
             IconButton { name: player.playing ? "pause" : "play"; box: 64; iconSize: 26; bg: root.pri; fg: "white"; onClicked: player.toggle() }
             IconButton { name: "next"; box: 44; iconSize: 22; onClicked: player.next() }
+        }
+        Rectangle {
+            visible: root.lyricsButton
+            Layout.alignment: Qt.AlignHCenter
+            Layout.preferredWidth: Math.max(168, btnRow.implicitWidth + 40)
+            Layout.preferredHeight: 40
+            color: root.lyricsMode ? root.pri : "transparent"
+            border.width: 1
+            border.color: root.pri
+            Row {
+                id: btnRow
+                anchors.centerIn: parent
+                spacing: 10
+                Icon { anchors.verticalCenter: parent.verticalCenter; name: "lyrics"; size: 18; color: root.lyricsMode ? "white" : root.pri }
+                Text { anchors.verticalCenter: parent.verticalCenter; text: "Lyrics"; font.pixelSize: 14; color: root.lyricsMode ? "white" : root.pri }
+            }
+            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.lyricsOpen = !root.lyricsOpen }
         }
         RowLayout {
             visible: Qt.platform.os !== "android"        // phones have volume keys
