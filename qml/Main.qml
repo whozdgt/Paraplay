@@ -73,8 +73,8 @@ Window {
         if (settingsOpen) { settingsOpen = false; return true }
         if (expanded) { expanded = false; return true }
         if (view === "user" || view === "friendpl") { back(); return true }
-        if (library.filterKind !== "") { goto(backView || "songs"); return true }
-        if (view !== "songs") { goto("songs"); return true }
+        if (library.filterKind !== "") { navigate(backView || "songs"); return true }
+        if (view !== "songs") { navigate("songs"); return true }
         return false
     }
     onClosing: (close) => { if (android && handleBack()) close.accepted = false }
@@ -86,7 +86,7 @@ Window {
         backView = kind + "s"
         view = "songs"
     }
-    function goto(v) { library.clearFilter(); searchOpen = false; drawerOpen = false; backView = ""; view = v }
+    function navigate(v) { library.clearFilter(); searchOpen = false; drawerOpen = false; backView = ""; view = v }
     function openUser(name) { searchOpen = false; social.openProfile(name, false); view = "user" }
     function openFriendPlaylist(pid, name, owner, fromUser) {
         searchOpen = false
@@ -96,7 +96,7 @@ Window {
     }
     function back() {
         if (view === "friendpl" && plBack === "user") view = "user"
-        else goto("friends")
+        else navigate("friends")
     }
     function openPlaylist(key, name) {
         searchOpen = false
@@ -174,12 +174,12 @@ Window {
             Behavior on x { enabled: win.phone; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
             anchors { top: parent.top; bottom: parent.bottom }
             view: win.view
-            onSelect: (v) => win.goto(v)
-            onProfileClicked: { win.drawerOpen = false; if (account.signedIn) win.goto("profile"); else win.authOpen = true }
+            onSelect: (v) => win.navigate(v)
+            onProfileClicked: { win.drawerOpen = false; if (account.signedIn) win.navigate("profile"); else win.authOpen = true }
             onSourceSelected: (id) => {
                 win.drawerOpen = false
                 library.source = id
-                if (win.view === "profile" || win.view === "playlists" || win.view === "friends" || win.view === "user" || win.view === "friendpl") win.goto("songs")
+                if (win.view === "profile" || win.view === "playlists" || win.view === "friends" || win.view === "user" || win.view === "friendpl") win.navigate("songs")
             }
             onAddServerRequested: { win.drawerOpen = false; win.addServerOpen = true }
             onUpdateClicked: { win.drawerOpen = false; settingsPanel.cat = "updates"; win.settingsOpen = true }
@@ -209,7 +209,7 @@ Window {
                         anchors.fill: parent
                         enabled: library.filterKind !== "" || win.view === "user" || win.view === "friendpl"
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: { if (win.view === "user" || win.view === "friendpl") win.back(); else win.goto(win.backView || "songs") }
+                        onClicked: { if (win.view === "user" || win.view === "friendpl") win.back(); else win.navigate(win.backView || "songs") }
                     }
                 }
             Row {      // sort, source, share…: beside the title on a computer, under it on a phone
