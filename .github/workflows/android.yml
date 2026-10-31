@@ -119,7 +119,19 @@ jobs:
             -DANDROID_VERSION_CODE="${{ github.run_number }}"
 
       - name: Build the APK
-        run: cmake --build build-android --target apk
+        run: |
+          set +e
+          cmake --build build-android --target apk 2>&1 | tee build.log
+          rc=${PIPESTATUS[0]}
+          if [ "$rc" -ne 0 ]; then
+            # put the useful lines where the Actions API shows them (the full log needs a sign-in)
+            esc() { sed -e 's/%/%25/g' | awk '{printf "%s%%0A", substr($0,1,300)}'; }
+            msg="$(grep -n -i -E 'error|undefined|FAILED|not found|could not|exception|what went wrong' build.log | head -25 | esc)"
+            echo "::error title=build errors::${msg}"
+            msg="$(tail -n 25 build.log | esc)"
+            echo "::error title=end of build log::${msg}"
+          fi
+          exit "$rc"
 
       - name: Sign
         id: sign
