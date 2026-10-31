@@ -12,9 +12,9 @@ Rectangle {
     readonly property color pri: settings.primary
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
     readonly property var cats: [
-        { k: "directories", t: "Directories" }, { k: "servers", t: "Servers" }, { k: "audio", t: "Audio" },
-        { k: "customisation", t: "Customisation" }, { k: "cover", t: "Cover art" },
-        { k: "theme", t: "Theme colours" }, { k: "updates", t: "Updates" }]
+        { k: "directories", t: "Directories", s: "Folders" }, { k: "servers", t: "Servers", s: "Servers" }, { k: "audio", t: "Audio", s: "Audio" },
+        { k: "customisation", t: "Customisation", s: "Look" }, { k: "cover", t: "Cover art", s: "Covers" },
+        { k: "theme", t: "Theme colours", s: "Colours" }, { k: "updates", t: "Updates", s: "Updates" }]
 
     function ago(ms) {
         if (!ms) return "never"
@@ -52,9 +52,9 @@ Rectangle {
                 Item {
                     required property var modelData
                     readonly property bool on: root.cat === modelData.k
-                    width: tabLabel.implicitWidth + 28
+                    width: tabLabel.implicitWidth + 22
                     height: 48
-                    Text { id: tabLabel; anchors.centerIn: parent; text: parent.modelData.t; font.pixelSize: 13; font.weight: parent.on ? Font.DemiBold : Font.Normal; color: root.pri }
+                    Text { id: tabLabel; anchors.centerIn: parent; text: parent.modelData.s; font.pixelSize: 13; font.weight: parent.on ? Font.DemiBold : Font.Normal; color: root.pri }
                     Rectangle {
                         anchors.bottom: parent.bottom; width: parent.width
                         height: parent.on ? 3 : 1
@@ -200,7 +200,8 @@ Rectangle {
                                     checked: card.modelData.enabled
                                     onToggled: servers.setEnabled(card.modelData.id, !card.modelData.enabled)
                                 }
-                                RowLayout {
+                                Flow {
+                                    Layout.fillWidth: true
                                     spacing: 8
                                     Btn { label: "Sync now"; primary: false; enabled: card.modelData.enabled && card.modelData.state !== "syncing"; onClicked: servers.syncNow(card.modelData.id) }
                                     Btn {
@@ -293,7 +294,8 @@ Rectangle {
                         checked: settings.autoUpdateCheck
                         onToggled: settings.autoUpdateCheck = !settings.autoUpdateCheck
                     }
-                    RowLayout {
+                    Flow {
+                        Layout.fillWidth: true
                         spacing: 8
                         Btn { label: updater.checking ? "Checking…" : "Check now"; primary: false; enabled: !updater.checking && !updater.installing; onClicked: updater.check(true) }
                         Btn {

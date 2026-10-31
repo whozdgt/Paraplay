@@ -332,3 +332,6 @@ grant execute on function public.social_listening(uuid)         to authenticated
 grant execute on function public.social_friend_playlists()      to authenticated;
 grant execute on function public.social_blocked()               to authenticated;
 -- is_blocked and can_see are internal helpers only; the functions above run as the owner and may call them.
+
+-- make the API notice the new columns and functions straight away
+notify pgrst, 'reload schema';

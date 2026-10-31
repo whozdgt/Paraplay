@@ -9,20 +9,24 @@ RowLayout {
     signal toggled()
     readonly property color pri: settings.primary
     Layout.fillWidth: true
-    Layout.preferredHeight: 44
+    Layout.preferredHeight: Math.max(44, textCol.implicitHeight + 10)
 
     ColumnLayout {
+        id: textCol
         Layout.fillWidth: true
         spacing: 0
         Text { Layout.fillWidth: true; text: root.label; elide: Text.ElideRight; font.pixelSize: 14; color: root.pri }
         Text {
             visible: root.note !== ""
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap          // a long note must wrap, or it pushes the switch off a narrow screen
             text: root.note
             font.pixelSize: 10
             color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.72)
         }
     }
     Rectangle {
+        Layout.alignment: Qt.AlignVCenter
         Layout.preferredWidth: 40
         Layout.preferredHeight: 22
         color: root.checked ? settings.accent : Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.25)

@@ -56,9 +56,10 @@ Window {
     Behavior on glowB { ColorAnimation { duration: 700 } }
 
     function groupView(v) {
-        if (v === "albums") return phone ? albumGrid : albumFlow
-        if (v === "artists") return phone ? artistGrid : artistFlow
-        return phone ? playlistGrid : playlistFlow
+        const grid = phone && settings.phoneGrid
+        if (v === "albums") return grid ? albumGrid : albumFlow
+        if (v === "artists") return grid ? artistGrid : artistFlow
+        return grid ? playlistGrid : playlistFlow
     }
     // The phone's Back button / swipe: close the top-most thing, or go up one level. False = nothing left to close.
     function handleBack() {
@@ -257,6 +258,20 @@ Window {
                     }
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { win.promptPath = ""; prompt.visible = true } }
                 }
+                Item {   // phone: covers you flick through, or a grid of them
+                    visible: win.phone && library.filterKind === "" && (win.view === "albums" || win.view === "artists" || win.view === "playlists")
+                    height: 36
+                    width: gridText.implicitWidth + 24
+                    anchors.verticalCenter: parent.verticalCenter
+                    Text {
+                        id: gridText
+                        anchors.centerIn: parent
+                        text: settings.phoneGrid ? "Show as flow" : "Show as grid"
+                        font.pixelSize: 13
+                        color: win.pri
+                    }
+                    MouseArea { anchors.fill: parent; onClicked: settings.phoneGrid = !settings.phoneGrid }
+                }
                 Row {   // Edit | Preview, on your own profile page
                     visible: win.view === "profile" && account.signedIn
                     anchors.verticalCenter: parent.verticalCenter
@@ -366,7 +381,7 @@ Window {
             Groups {
                 id: albumGrid
                 kind: "album"
-                active: win.phone && win.view === "albums"
+                active: win.phone && settings.phoneGrid && win.view === "albums"
                 visible: active
                 anchors { left: parent.left; leftMargin: 8; right: parent.right; rightMargin: 8; top: parent.top; bottom: parent.bottom; topMargin: win.contentTop }
                 onPicked: (key, name) => win.pick("album", key, name)
@@ -374,7 +389,7 @@ Window {
             Groups {
                 id: artistGrid
                 kind: "artist"
-                active: win.phone && win.view === "artists"
+                active: win.phone && settings.phoneGrid && win.view === "artists"
                 visible: active
                 anchors { left: parent.left; leftMargin: 8; right: parent.right; rightMargin: 8; top: parent.top; bottom: parent.bottom; topMargin: win.contentTop }
                 onPicked: (key, name) => win.pick("artist", key, name)
@@ -382,7 +397,7 @@ Window {
             Groups {
                 id: playlistGrid
                 kind: "playlist"
-                active: win.phone && win.view === "playlists"
+                active: win.phone && settings.phoneGrid && win.view === "playlists"
                 visible: active
                 anchors { left: parent.left; leftMargin: 8; right: parent.right; rightMargin: 8; top: parent.top; bottom: parent.bottom; topMargin: win.contentTop }
                 onPicked: (key, name) => win.openPlaylist(key, name)
@@ -390,7 +405,8 @@ Window {
             Carousel {
                 id: albumFlow
                 kind: "album"
-                active: !win.phone
+                active: !(win.phone && settings.phoneGrid)
+                phone: win.phone
                 searching: win.searchOpen && win.view === "albums"
                 visible: active && win.view === "albums"
                 anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: win.phone ? win.contentTop : 70 }
@@ -399,7 +415,8 @@ Window {
             Carousel {
                 id: artistFlow
                 kind: "artist"
-                active: !win.phone
+                active: !(win.phone && settings.phoneGrid)
+                phone: win.phone
                 searching: win.searchOpen && win.view === "artists"
                 visible: active && win.view === "artists"
                 anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: win.phone ? win.contentTop : 70 }
@@ -408,7 +425,8 @@ Window {
             Carousel {
                 id: playlistFlow
                 kind: "playlist"
-                active: !win.phone
+                active: !(win.phone && settings.phoneGrid)
+                phone: win.phone
                 searching: win.searchOpen && win.view === "playlists"
                 visible: active && win.view === "playlists"
                 anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: win.phone ? win.contentTop : 70 }

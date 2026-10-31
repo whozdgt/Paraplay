@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
     auto *settings = new QQmlPropertyMap(&app);
     const auto flag = [&](const char *k, bool d) { settings->insert(k, st.value(k, d).toBool()); };
     flag("frosted", true); flag("autoUpdateCheck", true); flag("adaptive", true); flag("lyrics", true); flag("badges", true);
-    flag("recordCover", false); flag("bitPerfect", true); flag("matchRate", true); flag("artistSplit", true); flag("onlineArtistPhotos", true);
+    flag("recordCover", false); flag("phoneGrid", false); flag("bitPerfect", true); flag("matchRate", true); flag("artistSplit", true); flag("onlineArtistPhotos", true);
     settings->insert("ringCount", st.value("ringCount", 3).toInt());
     settings->insert("volume", st.value("volume", 100).toInt());
     settings->insert("artistExceptions", st.value("artistExceptions",

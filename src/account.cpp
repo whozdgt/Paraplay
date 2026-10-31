@@ -339,17 +339,30 @@ void Account::saveProfile(const QString &displayName, const QString &bio, const 
                           bool discoverable, bool showPlaylists, bool listeningPublic, bool showCounts)
 {
     if (!signedIn()) return;
-    const QJsonObject body{{"display_name", displayName.trimmed().left(40)}, {"bio", bio.trimmed().left(160)},
-                           {"visibility", visibility}, {"discoverable", discoverable}, {"show_playlists", showPlaylists},
-                           {"listening_public", listeningPublic}, {"show_counts", showCounts}};
-    setMessage(QStringLiteral("Saving…"));
-    request("PATCH", QStringLiteral("/rest/v1/profiles?id=eq.") + m_uid, QJsonDocument(body),
-            [this, displayName, bio, visibility, discoverable, showPlaylists, listeningPublic, showCounts](bool ok, const QJsonDocument &d, int st) {
-        if (!ok) { setMessage(apiError(d, st)); return; }
+    QJsonObject body{{"display_name", displayName.trimmed().left(40)}, {"bio", bio.trimmed().left(160)},
+                     {"visibility", visibility}, {"discoverable", discoverable}, {"show_playlists", showPlaylists}};
+    const QJsonObject fullBody = [&]() { QJsonObject o = body; o.insert("listening_public", listeningPublic); o.insert("show_counts", showCounts); return o; }();
+    const auto remember = [this, displayName, bio, visibility, discoverable, showPlaylists, listeningPublic, showCounts](bool full) {
         m_displayName = displayName.trimmed().left(40); m_bio = bio.trimmed().left(160);
         m_visibility = visibility; m_discoverable = discoverable; m_showPlaylists = showPlaylists;
-        m_listeningPublic = listeningPublic; m_showCounts = showCounts;
-        setMessage(QStringLiteral("Profile saved."));
+        if (full) { m_listeningPublic = listeningPublic; m_showCounts = showCounts; }
+    };
+    setMessage(QStringLiteral("Saving…"));
+    request("PATCH", QStringLiteral("/rest/v1/profiles?id=eq.") + m_uid, QJsonDocument(fullBody),
+            [this, body, remember](bool ok, const QJsonDocument &d, int st) {
+        if (ok) { remember(true); setMessage(QStringLiteral("Profile saved.")); return; }
+        const QString err = apiError(d, st);
+        if (!err.contains(QLatin1String("schema cache"), Qt::CaseInsensitive) && !err.contains(QLatin1String("column"), Qt::CaseInsensitive)) {
+            setMessage(err);
+            return;
+        }
+        // The database hasn't had the social update (supabase/social.sql) yet, so it doesn't know the newer settings.
+        // Save everything it does know, and say what's missing.
+        request("PATCH", QStringLiteral("/rest/v1/profiles?id=eq.") + m_uid, QJsonDocument(body), [this, remember](bool ok2, const QJsonDocument &d2, int st2) {
+            if (!ok2) { setMessage(apiError(d2, st2)); return; }
+            remember(false);
+            setMessage(QStringLiteral("Saved, except “what I'm listening to” and “follower counts”: the server still needs its social update (run supabase/social.sql once)."));
+        }, true, {{"Prefer", "return=minimal"}});
     }, true, {{"Prefer", "return=minimal"}});
 }
 

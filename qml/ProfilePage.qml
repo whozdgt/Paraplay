@@ -51,6 +51,7 @@ Flickable {
         ColumnLayout {
             visible: account.signedIn && root.editing
             Layout.fillWidth: true
+            Layout.maximumWidth: col.width
             spacing: 0
             // Banner (a still picture or a GIF), then the profile picture and name underneath.
             Item {
@@ -176,8 +177,9 @@ Flickable {
             ToggleRow { label: "Show follower counts"; checked: root.counts; onToggled: root.counts = !root.counts }
             ToggleRow { label: "Sync my playlists"; note: "Keeps them on all your computers"; checked: account.syncPlaylists; onToggled: account.syncPlaylists = !account.syncPlaylists }
 
-            Row {
+            Flow {
                 Layout.topMargin: 14
+                Layout.fillWidth: true
                 spacing: 10
                 Btn { label: "Save profile"; enabled: !account.busy; onClicked: account.saveProfile(nameIn.text, bioIn.text, root.vis, root.disc, root.showPl, root.listen, root.counts) }
                 Btn { primary: false; label: "Sync now"; enabled: !account.busy; onClicked: account.syncNow() }
@@ -187,8 +189,9 @@ Flickable {
                 Layout.topMargin: 10; Layout.fillWidth: true; wrapMode: Text.Wrap; font.pixelSize: 12; color: root.muted
                 text: account.message + (account.lastSync !== "" ? "   Last synced " + account.lastSync : "")
             }
-            Row {
+            Flow {
                 Layout.topMargin: 18
+                Layout.fillWidth: true
                 spacing: 10
                 Btn { primary: false; label: "Download my data"; onClicked: account.exportData() }
                 Btn { primary: false; label: root.confirmDelete ? "Tap again to delete everything" : "Delete account…"; onClicked: { if (root.confirmDelete) account.deleteAccount(); else root.confirmDelete = true } }

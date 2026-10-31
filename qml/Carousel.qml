@@ -5,6 +5,7 @@ Item {
     id: root
     property string kind: "album"          // album | artist | playlist
     property bool searching: false         // true = the covers stack up behind the front one
+    property bool phone: false             // smaller cover, and no photo editing (it needs a file path typed in)
     property bool active: true             // false = hold nothing in memory (a phone shows a grid instead)
     property string editName: ""           // artist whose photo is being changed
     // While searching, a chosen result is shown on its own (two plain frosted layers behind it) and the
@@ -21,7 +22,8 @@ Item {
         library.revision
         return library.groups(kind)
     }
-    readonly property real cover: Math.max(120, Math.min(height - 110, width * 0.3))
+    readonly property real cover: phone ? Math.max(100, Math.min(height - 100, width * 0.56))
+                                        : Math.max(120, Math.min(height - 110, width * 0.3))
     readonly property var cur: stacked ? stackItem
         : (flow.count > 0 && flow.currentIndex >= 0 && flow.currentIndex < items.length ? items[flow.currentIndex] : null)
     property real spread: searching ? 0.05 : 1
@@ -107,7 +109,7 @@ Item {
             }
             CoverTile { anchors.fill: parent; entry: d.modelData; kind: root.kind }
             Rectangle {
-                visible: root.kind === "artist" && d.isCur && !root.searching
+                visible: root.kind === "artist" && d.isCur && !root.searching && !root.phone
                 anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
                 height: 40
                 color: Qt.rgba(0, 0, 0, 0.65)
@@ -156,7 +158,7 @@ Item {
     Column {
         id: info
         anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 14 }
-        width: root.width - 80
+        width: root.width - (root.phone ? 32 : 80)
         spacing: 4
         Text {
             width: parent.width; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
@@ -186,7 +188,7 @@ Item {
         visible: root.editName !== ""
         z: 50
         anchors.centerIn: parent
-        width: 420
+        width: Math.min(420, root.width - 24)
         height: 250
         color: Qt.rgba(1, 1, 1, 0.95)
         MouseArea { anchors.fill: parent }
