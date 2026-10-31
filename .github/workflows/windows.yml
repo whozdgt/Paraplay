@@ -147,6 +147,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          export PATH="$PATH:/c/Program Files/GitHub CLI"      # the MSYS2 shell doesn't know where gh is
           # the release workflow creates the release a moment after the tag; wait for it
           for i in $(seq 1 30); do
             gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1 && break
@@ -161,6 +162,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RUN: ${{ github.run_number }}
         run: |
+          export PATH="$PATH:/c/Program Files/GitHub CLI"      # the MSYS2 shell doesn't know where gh is
           sha="$(sha256sum Paraplay-Setup.exe | cut -d' ' -f1)"
           # a slower, older run must not replace a newer build
           cur="$(curl -fsSL "https://github.com/${GITHUB_REPOSITORY}/releases/download/windows-latest/latest.json" 2>/dev/null | sed -n 's/.*"build": *\([0-9]*\).*/\1/p' | head -1 || true)"
