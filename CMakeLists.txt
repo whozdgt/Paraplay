@@ -36,7 +36,8 @@ qt_add_executable(musicplayer
   src/artistimages.cpp src/artistimages.h src/playlists.cpp src/playlists.h
   src/account.cpp src/account.h src/backend_config.h
   src/servers.cpp src/servers.h src/updater.cpp src/updater.h src/update_config.h
-  src/social.cpp src/social.h src/folders.cpp src/folders.h)
+  src/social.cpp src/social.h src/folders.cpp src/folders.h
+  src/playstats.cpp src/playstats.h)
 
 target_compile_definitions(musicplayer PRIVATE APP_VERSION="${PROJECT_VERSION}")
 
@@ -53,7 +54,9 @@ qt_add_qml_module(musicplayer
     qml/CoverTile.qml qml/Field.qml qml/AddServerPanel.qml
     qml/PersonRow.qml qml/FollowButton.qml qml/Chip.qml qml/TwoColumns.qml qml/FriendsPage.qml
     qml/PublicProfile.qml qml/ProfilePreview.qml qml/FriendPlaylist.qml
-    qml/FolderPicker.qml qml/GalleryPicker.qml qml/LyricsView.qml qml/Welcome.qml)
+    qml/FolderPicker.qml qml/GalleryPicker.qml qml/LyricsView.qml qml/Welcome.qml
+    qml/HomeLayout.qml qml/HomePage.qml qml/HomeHeading.qml qml/HomePerson.qml qml/HomeFriends.qml
+    qml/HomeRequests.qml qml/HomeTop.qml qml/HomeStrip.qml qml/HomeSongs.qml)
 
 target_link_libraries(musicplayer PRIVATE
   Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Concurrent Qt6::Network)

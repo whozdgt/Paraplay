@@ -16,9 +16,6 @@ Item {
 
     function focusSearch() { if (typeof searchBox !== "undefined") searchBox.focusInput() }
 
-    onVisibleChanged: social.watch(visible && signedIn)
-    onSignedInChanged: social.watch(visible && signedIn)
-
     // ---- signed out ----
     Column {
         visible: !root.signedIn

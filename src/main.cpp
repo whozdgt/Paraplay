@@ -23,6 +23,7 @@
 #include "library.h"
 #include "player.h"
 #include "playlists.h"
+#include "playstats.h"
 #include "servers.h"
 #include "social.h"
 #include "updater.h"
@@ -69,6 +70,11 @@ int main(int argc, char *argv[])
     const auto flag = [&](const char *k, bool d) { settings->insert(k, st.value(k, d).toBool()); };
     flag("frosted", true); flag("autoUpdateCheck", true); flag("adaptive", true); flag("lyrics", true); flag("onlineLyrics", true); flag("badges", true);
     flag("recordCover", false); flag("phoneGrid", false); flag("bitPerfect", true); flag("matchRate", true); flag("artistSplit", true); flag("onlineArtistPhotos", true);
+    // Home page layout. Until homeCustom is set the page uses its built-in default (which differs for guests and signed-in people).
+    flag("homeCustom", false);
+    settings->insert("homeOrder", st.value("homeOrder", "").toString());   // comma separated section keys, top to bottom
+    settings->insert("homeOff", st.value("homeOff", "").toString());       // sections the person switched off
+    settings->insert("homeTop", st.value("homeTop", "4w").toString());     // top artists: "4w" or "all"
     settings->insert("ringCount", st.value("ringCount", 3).toInt());
     settings->insert("volume", st.value("volume", 100).toInt());
     settings->insert("artistExceptions", st.value("artistExceptions",
@@ -123,6 +129,7 @@ int main(int argc, char *argv[])
     Account account(&playlists);
     ServerManager servers(&library);
     Social social(&account, &library, &player);
+    PlayStats stats(&player, &library);
     social.setServerName([&](const QString &p) { return servers.serverNameFor(p); });
     UpdateChecker updater;
     player.setRemote({
@@ -154,6 +161,7 @@ int main(int argc, char *argv[])
     ctx->setContextProperty("account", &account);
     ctx->setContextProperty("servers", &servers);
     ctx->setContextProperty("social", &social);
+    ctx->setContextProperty("stats", &stats);
     ctx->setContextProperty("folders", &folders);
     ctx->setContextProperty("updater", &updater);
     engine.loadFromModule("Music", "Main");

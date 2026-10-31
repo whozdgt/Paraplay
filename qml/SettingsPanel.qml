@@ -7,13 +7,15 @@ Rectangle {
     signal addServerRequested()
     signal chooseFolderRequested()
     property string cat: "customisation"
+    property var layout                    // HomeLayout: what the Home page shows
+    property bool confirmForget: false     // "Forget my listening history" is waiting for a second press
     readonly property bool compact: width < 560      // phone: the sections become a row of tabs along the top
     property string confirmId: ""          // server whose Remove button is waiting for a second press
     readonly property color pri: settings.primary
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
     readonly property var cats: [
         { k: "directories", t: "Directories", s: "Folders" }, { k: "servers", t: "Servers", s: "Servers" }, { k: "audio", t: "Audio", s: "Audio" },
-        { k: "customisation", t: "Customisation", s: "Look" }, { k: "cover", t: "Cover art", s: "Covers" },
+        { k: "customisation", t: "Customisation", s: "Look" }, { k: "home", t: "Home page", s: "Home" }, { k: "cover", t: "Cover art", s: "Covers" },
         { k: "theme", t: "Theme colours", s: "Colours" }, { k: "updates", t: "Updates", s: "Updates" }]
 
     function ago(ms) {
@@ -241,6 +243,72 @@ Rectangle {
                     ToggleRow { label: "Show lyrics"; checked: settings.lyrics; onToggled: settings.lyrics = !settings.lyrics }
                     ToggleRow { label: "Look up lyrics online"; note: "For songs without lyrics of their own, sends the artist, title and length to lrclib.net. Found lyrics are kept on this device"; checked: settings.onlineLyrics; onToggled: settings.onlineLyrics = !settings.onlineLyrics }
                     ToggleRow { label: "Fetch artist pictures online"; note: "Sends artist names to Deezer"; checked: settings.onlineArtistPhotos; onToggled: settings.onlineArtistPhotos = !settings.onlineArtistPhotos }
+                }
+
+                ColumnLayout {
+                    width: parent.width
+                    visible: root.cat === "home"
+                    Text {
+                        Layout.fillWidth: true; wrapMode: Text.Wrap; font.pixelSize: 12; lineHeight: 1.4; color: root.muted
+                        text: "Switch sections on or off, and use the arrows to move them up or down. Changes show straight away."
+                    }
+                    Repeater {
+                        model: root.layout ? root.layout.listed : []
+                        Rectangle {
+                            id: hrow
+                            required property string modelData
+                            required property int index
+                            readonly property bool on: root.layout.isOn(modelData)
+                            Layout.fillWidth: true
+                            Layout.topMargin: 6
+                            Layout.preferredHeight: hline.implicitHeight + 8
+                            color: settings.solid ? settings.boxFill : Qt.rgba(1, 1, 1, 0.6)
+                            opacity: on ? 1 : 0.75
+                            RowLayout {
+                                id: hline
+                                anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; leftMargin: 12; rightMargin: 6 }
+                                spacing: 2
+                                ToggleRow {
+                                    label: root.layout.titles[hrow.modelData]
+                                    note: root.layout.notes[hrow.modelData]
+                                    checked: hrow.on
+                                    onToggled: root.layout.toggle(hrow.modelData)
+                                }
+                                IconButton { Layout.leftMargin: 8; name: "up"; box: 36; iconSize: 18; enabled: hrow.index > 0; opacity: enabled ? 1 : 0.3; onClicked: root.layout.move(hrow.modelData, -1) }
+                                IconButton { name: "down"; box: 36; iconSize: 18; enabled: hrow.index < root.layout.listed.length - 1; opacity: enabled ? 1 : 0.3; onClicked: root.layout.move(hrow.modelData, 1) }
+                            }
+                        }
+                    }
+                    Text {
+                        visible: !account.signedIn
+                        Layout.fillWidth: true; Layout.topMargin: 6; wrapMode: Text.Wrap; font.pixelSize: 11; lineHeight: 1.4; color: root.muted
+                        text: "Your friends and follow requests join this list once you sign in."
+                    }
+                    Btn {
+                        Layout.topMargin: 12
+                        label: "Reset to the default layout"
+                        primary: false
+                        enabled: settings.homeCustom
+                        onClicked: root.layout.reset()
+                    }
+                    SectionLabel { text: "LISTENING HISTORY" }
+                    Text {
+                        Layout.fillWidth: true; wrapMode: Text.Wrap; font.pixelSize: 12; lineHeight: 1.4; color: root.muted
+                        text: "Your top artists come from what you play. It is counted and kept on this device only, and never uploaded. "
+                              + stats.total + (stats.total === 1 ? " play" : " plays") + " counted so far."
+                    }
+                    Flow {
+                        Layout.fillWidth: true
+                        Layout.topMargin: 6
+                        spacing: 8
+                        Btn {
+                            label: root.confirmForget ? "Yes, forget it" : "Forget my listening history"
+                            primary: false
+                            enabled: stats.total > 0
+                            onClicked: { if (root.confirmForget) { stats.clear(); root.confirmForget = false } else root.confirmForget = true }
+                        }
+                        Btn { visible: root.confirmForget; label: "Keep it"; primary: false; onClicked: root.confirmForget = false }
+                    }
                 }
 
                 ColumnLayout {

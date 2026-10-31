@@ -40,8 +40,9 @@ Window {
     property string promptPath: ""
     property string currentPlaylist: ""
     onSearchOpenChanged: { if (searchOpen) searchBar.open(); else library.search = "" }
-    property string view: "songs"          // songs | albums | artists
+    property string view: "home"           // home | songs | albums | artists | playlists | profile | friends | user | friendpl
     property string backView: ""
+    property string userBack: "home"        // where "back" goes from someone's profile
     property string profileMode: "edit"     // edit | preview (your own profile page)
     property string plBack: "friends"        // where "back" goes from a friend's playlist
     readonly property color pri: settings.primary
@@ -75,39 +76,58 @@ Window {
         if (settingsOpen) { settingsOpen = false; return true }
         if (expanded) { expanded = false; return true }
         if (view === "user" || view === "friendpl") { back(); return true }
-        if (library.filterKind !== "") { navigate(backView || "songs"); return true }
-        if (view !== "songs") { navigate("songs"); return true }
+        if (library.filterKind !== "") { navigate(backView || "home"); return true }
+        if (view !== "home") { navigate("home"); return true }
         return false
     }
     onClosing: (close) => { if (android && handleBack()) close.accepted = false }
 
-    function pick(kind, key, label) {
+    // from = the page "back" returns to; left out, it is the list the item came from (albums, artists…)
+    function pick(kind, key, label, from) {
         searchOpen = false
         drawerOpen = false
         library.setFilter(kind, key, label)
-        backView = kind + "s"
+        backView = from || (kind + "s")
         view = "songs"
     }
     function navigate(v) { library.clearFilter(); searchOpen = false; drawerOpen = false; backView = ""; view = v }
-    function openUser(name) { searchOpen = false; social.openProfile(name, false); view = "user" }
+    function openUser(name) {
+        searchOpen = false
+        if (view !== "user" && view !== "friendpl") userBack = view
+        social.openProfile(name, false)
+        view = "user"
+    }
     function openFriendPlaylist(pid, name, owner, fromUser) {
         searchOpen = false
+        if (!fromUser && view !== "friendpl") userBack = view
         plBack = fromUser ? "user" : "friends"
         social.openPlaylist(pid, name, owner)
         view = "friendpl"
     }
     function back() {
         if (view === "friendpl" && plBack === "user") view = "user"
-        else navigate("friends")
+        else navigate(userBack || "home")
     }
-    function openPlaylist(key, name) {
+    function openPlaylist(key, name, from) {
         searchOpen = false
         drawerOpen = false
         currentPlaylist = key
         library.setPlaylistFilter(key, name, playlists.paths(key))
-        backView = "playlists"
+        backView = from || "playlists"
         view = "songs"
     }
+    function openFindPeople() {
+        navigate("friends")
+        friendsPage.tab = "find"
+        Qt.callLater(friendsPage.focusSearch)
+    }
+
+    // The Home and Friends pages show what your friends are playing, so keep that fresh while one of them is open.
+    readonly property bool watchSocial: account.signedIn && (view === "home" || view === "friends")
+    onWatchSocialChanged: social.watch(watchSocial)
+    Component.onCompleted: social.watch(watchSocial)
+
+    HomeLayout { id: homeLayout }
 
     Rectangle {
         anchors.fill: parent
@@ -177,8 +197,6 @@ Window {
             anchors { top: parent.top; bottom: parent.bottom }
             view: win.view
             onSelect: (v) => win.navigate(v)
-            socialTab: friendsPage.tab
-            onSocialSelected: (tab) => { win.navigate("friends"); friendsPage.tab = tab; if (tab === "find") Qt.callLater(friendsPage.focusSearch) }
             onProfileClicked: { win.drawerOpen = false; if (account.signedIn) win.navigate("profile"); else win.authOpen = true }
             onSourceSelected: (id) => {
                 win.drawerOpen = false
@@ -199,7 +217,8 @@ Window {
                 y: win.phone ? 12 : 26
                 height: win.phone ? 32 : implicitHeight
                 verticalAlignment: Text.AlignVCenter
-                    text: win.view === "friends" ? "Friends"
+                    visible: win.view !== "home"
+                    text: win.view === "friends" ? "‹ Friends"
                         : win.view === "user" ? "‹ " + (social.profile.name || social.profile.username || "Profile")
                         : win.view === "friendpl" ? "‹ " + (social.playlist.name || "Playlist")
                         : library.filterKind !== "" ? "‹ " + library.filterName
@@ -211,9 +230,13 @@ Window {
                     width: Math.min(implicitWidth, win.phone ? parent.width - x - 104 : parent.width - 140)
                     MouseArea {
                         anchors.fill: parent
-                        enabled: library.filterKind !== "" || win.view === "user" || win.view === "friendpl"
+                        enabled: library.filterKind !== "" || win.view === "user" || win.view === "friendpl" || win.view === "friends"
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: { if (win.view === "user" || win.view === "friendpl") win.back(); else win.navigate(win.backView || "songs") }
+                        onClicked: {
+                            if (win.view === "user" || win.view === "friendpl") win.back()
+                            else if (win.view === "friends") win.navigate("home")
+                            else win.navigate(win.backView || "songs")
+                        }
                     }
                 }
             Row {      // sort, source, share…: beside the title on a computer, under it on a phone
@@ -346,6 +369,21 @@ Window {
                 }
             }
 
+            HomePage {
+                id: homePage
+                visible: win.view === "home"
+                layout: homeLayout
+                gutter: win.gutter
+                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: win.phone ? 56 : 18 }
+                onOpenUser: (username) => win.openUser(username)
+                onOpenArtist: (name) => win.pick("artist", name, name, "home")
+                onOpenAlbum: (key, name) => win.pick("album", key, name, "home")
+                onOpenPlaylist: (key, name) => win.openPlaylist(key, name, "home")
+                onShowView: (v) => win.navigate(v)
+                onMenuRequested: (path, gx, gy) => { win.menuPath = path; win.menuX = gx; win.menuY = gy }
+                onOpenProfile: win.navigate("profile")
+                onSignInRequested: win.authOpen = true
+            }
             ProfilePage {
                 id: profilePage
                 visible: win.view === "profile"
@@ -562,7 +600,18 @@ Window {
         visible: !win.settingsOpen && !(win.phone && (win.drawerOpen || win.searchOpen)) && win.view !== "friends" && win.view !== "user" && win.view !== "friendpl"
         anchors { right: parent.right; rightMargin: win.phone ? 52 : 76; top: parent.top; topMargin: win.phone ? 6 : 18 }
         name: "search"; box: 44; iconSize: 22
-        onClicked: win.searchOpen = !win.searchOpen
+        onClicked: {
+            if (win.view === "home") { win.navigate("songs"); win.searchOpen = true }      // the home page has nothing to search: use the song list
+            else win.searchOpen = !win.searchOpen
+        }
+    }
+
+    IconButton {      // Home: find people to follow
+        z: 10
+        visible: win.view === "home" && account.signedIn && !win.expanded && !win.settingsOpen && !(win.phone && (win.drawerOpen || win.searchOpen))
+        anchors { right: parent.right; rightMargin: win.phone ? 98 : 132; top: parent.top; topMargin: win.phone ? 6 : 18 }
+        name: "personplus"; box: 44; iconSize: 22
+        onClicked: win.openFindPeople()
     }
 
     IconButton {
@@ -582,6 +631,7 @@ Window {
 
     SettingsPanel {
         id: settingsPanel
+        layout: homeLayout
         z: 20
         visible: win.settingsOpen
         width: win.phone ? win.width : 540
