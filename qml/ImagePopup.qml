@@ -21,11 +21,11 @@ Item {
     }
     function send() {
         const u = chosen !== "" ? chosen : account.localFileUrl(pathIn.text)
-        if (u === "") { note = "Drop a picture onto this window, or paste its path, first."; return }
+        if (u === "") { note = Qt.platform.os === "android" ? "Choose a picture first." : "Drop a picture onto this window, or paste its path, first."; return }
         note = ""
         account.uploadImage(kind, u)
     }
-    onVisibleChanged: if (visible) { pathIn.text = ""; chosen = ""; note = ""; pathIn.forceActiveFocus() }
+    onVisibleChanged: if (visible) { pathIn.text = ""; chosen = ""; note = ""; if (Qt.platform.os !== "android") pathIn.forceActiveFocus() }
 
     Connections {
         target: account
@@ -34,6 +34,12 @@ Item {
             if (ok) root.visible = false
             else root.note = text
         }
+    }
+
+    Loader {      // phones: the system's picture picker
+        id: gallery
+        active: Qt.platform.os === "android"
+        sourceComponent: GalleryPicker { onPicked: (url) => root.pickFile(url) }
     }
 
     Rectangle { anchors.fill: parent; color: Qt.rgba(1, 1, 1, 0.35) }
@@ -99,12 +105,21 @@ Item {
 
             Text {
                 width: parent.width; wrapMode: Text.Wrap; font.pixelSize: 11; color: root.muted
+                readonly property string how: Qt.platform.os === "android" ? "Tap “Choose picture” to pick one from your phone."
+                                                                          : "Drop a picture onto this window, or paste its file path below and press Enter."
                 text: root.isBanner
-                    ? "Drop a picture onto this window, or paste its file path below and press Enter. Wide pictures work best (about 1400 × 400). PNG, JPEG, WebP or GIF. A GIF banner is uploaded as it is and can be up to 3 MB and 1200 × 600."
-                    : "Drop a picture onto this window, or paste its file path below and press Enter. PNG, JPEG or WebP. The middle square is used and it is shrunk for you."
+                    ? how + " Wide pictures work best (about 1400 × 400). PNG, JPEG, WebP or GIF. A GIF banner is uploaded as it is and can be up to 3 MB and 1200 × 600."
+                    : how + " PNG, JPEG or WebP. The middle square is used and it is shrunk for you."
+            }
+
+            Btn {
+                visible: Qt.platform.os === "android"
+                label: "Choose picture"
+                onClicked: if (gallery.item) gallery.item.open()
             }
 
             Rectangle {
+                visible: Qt.platform.os !== "android"
                 width: parent.width; height: 40
                 color: Qt.rgba(1, 1, 1, 0.8); border.width: 1
                 border.color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.3)

@@ -497,6 +497,27 @@ QString Account::cacheDir() const
 
 QString Account::localFileUrl(const QString &source) const
 {
+    // Android's picture picker hands over a content:// address, not a file path. Copy it into the cache first.
+    if (source.trimmed().startsWith(QLatin1String("content:"))) {
+        QFile in(source.trimmed());
+        if (!in.open(QIODevice::ReadOnly)) return {};
+        if (in.size() > kMaxPickBytes) return {};
+        const QByteArray bytes = in.readAll();
+        const QByteArray head = bytes.left(8);
+        const QString ext = head.startsWith("GIF8") ? QStringLiteral("gif")
+                          : head.startsWith("\x89PNG") ? QStringLiteral("png")
+                          : head.startsWith("RIFF") ? QStringLiteral("webp")
+                          : QStringLiteral("jpg");
+        const QString dir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + QStringLiteral("/picked");
+        QDir().mkpath(dir);
+        for (const QString &old : QDir(dir).entryList(QDir::Files)) QFile::remove(dir + QLatin1Char('/') + old);   // keep only the newest
+        const QString file = dir + QStringLiteral("/picked-") + QString::number(QDateTime::currentMSecsSinceEpoch()) + QLatin1Char('.') + ext;
+        QFile out(file);
+        if (!out.open(QIODevice::WriteOnly)) return {};
+        out.write(bytes);
+        out.close();
+        return QUrl::fromLocalFile(file).toString();
+    }
     const QString p = cleanPath(source);
     return (!p.isEmpty() && QFileInfo(p).isFile()) ? QUrl::fromLocalFile(p).toString() : QString();
 }

@@ -36,6 +36,7 @@ signals:
     void revisionChanged();
 
 private:
+    void reresolve();      // find local songs for playlist entries that arrived before the music was scanned
     struct Item { QString path, title, artist, album; };
     struct Pl { QString id, name; qint64 updated = 0; QVector<Item> items; bool shared = false; };
     Pl *find(const QString &id);

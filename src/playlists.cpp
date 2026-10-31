@@ -6,6 +6,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QSet>
 #include <QStandardPaths>
 #include <QUuid>
 #include <algorithm>
@@ -16,7 +17,13 @@
 
 namespace { qint64 now() { return QDateTime::currentMSecsSinceEpoch(); } }
 
-Playlists::Playlists(Library *lib, QObject *parent) : QObject(parent), m_lib(lib) { load(); }
+Playlists::Playlists(Library *lib, QObject *parent) : QObject(parent), m_lib(lib)
+{
+    load();
+    // A playlist synced from another device only names its songs. They are matched to this device's files when the
+    // library has them, so match again after every scan (a phone scans its music after it has already synced).
+    connect(m_lib, &Library::revisionChanged, this, &Playlists::reresolve);
+}
 
 QString Playlists::filePath(const QString &profile) const
 {
@@ -233,9 +240,31 @@ void Playlists::applyRemote(const QString &id, const QString &name, qint64 updat
         const QVariantMap m = v.toMap();
         Item it{{}, m.value("title").toString(), m.value("artist").toString(), m.value("album").toString()};
         Track t;
-        if (m_lib->findByMeta(it.title, it.artist, it.album, t)) it.path = t.path;   // empty = song not on this computer
+        if (m_lib->findByMeta(it.title, it.artist, it.album, t) || m_lib->matchLoose(it.title, it.artist, it.album, 0, t)) it.path = t.path;   // empty = song not on this device
         p->items.push_back(it);
     }
+    save();
+    ++m_rev;
+    emit revisionChanged();
+}
+
+void Playlists::reresolve()
+{
+    const Library::Snapshot snap = m_lib->snapshot();
+    if (!snap.tracks || snap.tracks->isEmpty()) return;
+    QSet<QString> have;
+    have.reserve(int(snap.tracks->size()));
+    for (const Track &t : *snap.tracks) have.insert(t.path);
+    bool any = false;
+    for (Pl &p : m_pls)
+        for (Item &i : p.items) {
+            if (i.title.isEmpty() || i.path.startsWith(QLatin1String("srv://"))) continue;   // server songs are left alone
+            if (!i.path.isEmpty() && have.contains(i.path)) continue;
+            Track t;
+            const QString found = m_lib->matchLoose(i.title, i.artist, i.album, 0, t) ? t.path : QString();
+            if (found != i.path) { i.path = found; any = true; }
+        }
+    if (!any) return;
     save();
     ++m_rev;
     emit revisionChanged();

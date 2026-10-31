@@ -18,6 +18,7 @@
 #include "account.h"
 #include "artistimages.h"
 #include "cover.h"
+#include "folders.h"
 #include "library.h"
 #include "player.h"
 #include "playlists.h"
@@ -79,6 +80,7 @@ int main(int argc, char *argv[])
     settings->insert("musicDir", dir);
 
     Library library;
+    FolderBrowser folders;
     Player player(&library, settings->value("bitPerfect").toBool(), settings->value("matchRate").toBool());
 
     const auto applySplit = [&]() {
@@ -121,6 +123,7 @@ int main(int argc, char *argv[])
     ctx->setContextProperty("account", &account);
     ctx->setContextProperty("servers", &servers);
     ctx->setContextProperty("social", &social);
+    ctx->setContextProperty("folders", &folders);
     ctx->setContextProperty("updater", &updater);
     engine.loadFromModule("Music", "Main");
     if (engine.rootObjects().isEmpty()) return 1;

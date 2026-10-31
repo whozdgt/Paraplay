@@ -5,6 +5,7 @@ Rectangle {
     id: root
     signal close()
     signal addServerRequested()
+    signal chooseFolderRequested()
     property string cat: "customisation"
     readonly property bool compact: width < 560      // phone: the sections become a row of tabs along the top
     property string confirmId: ""          // server whose Remove button is waiting for a second press
@@ -113,7 +114,13 @@ Rectangle {
                     width: parent.width
                     visible: root.cat === "directories"
                     SectionLabel { text: "MUSIC FOLDER" }
+                    Text {      // phones: just show where it points; changing it is done with the button below
+                        visible: Qt.platform.os === "android"
+                        Layout.fillWidth: true; wrapMode: Text.WrapAnywhere; font.pixelSize: 13; color: root.pri
+                        text: settings.musicDir
+                    }
                     Rectangle {
+                        visible: Qt.platform.os !== "android"
                         Layout.fillWidth: true; Layout.preferredHeight: 36
                         color: Qt.rgba(1, 1, 1, 0.6); border.width: 1
                         border.color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.3)
@@ -125,9 +132,10 @@ Rectangle {
                             onAccepted: settings.musicDir = text
                         }
                     }
+                    Btn { Layout.topMargin: 6; label: "Choose folder…"; onClicked: root.chooseFolderRequested() }
                     Text {
                         Layout.fillWidth: true; wrapMode: Text.Wrap; font.pixelSize: 10; color: root.muted
-                        text: library.scanning ? "Scanning…" : "Press Enter to scan this folder."
+                        text: library.scanning ? "Scanning…" : (Qt.platform.os === "android" ? "Tap Choose folder to pick where your music is. It is scanned right away." : "Choose a folder, or type its path and press Enter.")
                     }
                     SectionLabel { text: "ARTIST NAMES" }
                     ToggleRow {

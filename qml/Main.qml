@@ -62,6 +62,7 @@ Window {
     }
     // The phone's Back button / swipe: close the top-most thing, or go up one level. False = nothing left to close.
     function handleBack() {
+        if (folderPicker.visible) { folderPicker.visible = false; return true }
         if (addServerOpen) { addServerOpen = false; return true }
         if (authOpen) { authOpen = false; return true }
         if (imagePopup.visible) { imagePopup.visible = false; return true }
@@ -561,6 +562,17 @@ Window {
         anchors { right: parent.right; rightMargin: win.phone ? 0 : 20; top: parent.top; topMargin: win.phone ? 0 : 16; bottom: parent.bottom; bottomMargin: win.phone ? 0 : (win.expanded ? 16 : 88) }
         onClose: win.settingsOpen = false
         onAddServerRequested: { win.settingsOpen = false; win.addServerOpen = true }
+        onChooseFolderRequested: folderPicker.visible = true
+    }
+
+    FolderPicker {
+        id: folderPicker
+        z: 62
+        anchors.fill: parent
+        visible: false
+        startPath: settings.musicDir
+        onChosen: (dir) => { settings.musicDir = dir; visible = false }
+        onCancelled: visible = false
     }
 
     AuthPanel {
@@ -650,5 +662,5 @@ Window {
     Shortcut { sequence: "Right"; enabled: !win.settingsOpen && !win.searchOpen && !prompt.visible && !imagePopup.visible && !win.authOpen && !win.addServerOpen && (win.expanded || win.view === "songs"); onActivated: player.seek(player.position + 5) }
     Shortcut { sequence: "N"; enabled: !win.settingsOpen && !win.searchOpen && !prompt.visible && !imagePopup.visible && !win.authOpen && !win.addServerOpen; onActivated: player.next() }
     Shortcut { sequence: "P"; enabled: !win.settingsOpen && !win.searchOpen && !prompt.visible && !imagePopup.visible && !win.authOpen && !win.addServerOpen; onActivated: player.prev() }
-    Shortcut { sequence: "Escape"; onActivated: { if (win.addServerOpen) win.addServerOpen = false; else if (win.authOpen) win.authOpen = false; else if (imagePopup.visible) imagePopup.visible = false; else if (prompt.visible) prompt.visible = false; else if (win.menuPath !== "") win.menuPath = ""; else if (win.sourceOpen) win.sourceOpen = false; else if (win.searchOpen) win.searchOpen = false; else if (win.settingsOpen) win.settingsOpen = false; else if (!win.expanded && (win.view === "user" || win.view === "friendpl")) win.back(); else win.expanded = false } }
+    Shortcut { sequence: "Escape"; onActivated: { if (folderPicker.visible) folderPicker.visible = false; else if (win.addServerOpen) win.addServerOpen = false; else if (win.authOpen) win.authOpen = false; else if (imagePopup.visible) imagePopup.visible = false; else if (prompt.visible) prompt.visible = false; else if (win.menuPath !== "") win.menuPath = ""; else if (win.sourceOpen) win.sourceOpen = false; else if (win.searchOpen) win.searchOpen = false; else if (win.settingsOpen) win.settingsOpen = false; else if (!win.expanded && (win.view === "user" || win.view === "friendpl")) win.back(); else win.expanded = false } }
 }
