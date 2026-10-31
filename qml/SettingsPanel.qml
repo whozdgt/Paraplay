@@ -239,6 +239,7 @@ Rectangle {
                     ToggleRow { label: "Frosted glass"; checked: settings.frosted; onToggled: settings.frosted = !settings.frosted }
                     ToggleRow { label: "Adapt to album colours"; checked: settings.adaptive; onToggled: settings.adaptive = !settings.adaptive }
                     ToggleRow { label: "Show lyrics"; checked: settings.lyrics; onToggled: settings.lyrics = !settings.lyrics }
+                    ToggleRow { label: "Look up lyrics online"; note: "For songs without lyrics of their own, sends the artist, title and length to lrclib.net. Found lyrics are kept on this device"; checked: settings.onlineLyrics; onToggled: settings.onlineLyrics = !settings.onlineLyrics }
                     ToggleRow { label: "Fetch artist pictures online"; note: "Sends artist names to Deezer"; checked: settings.onlineArtistPhotos; onToggled: settings.onlineArtistPhotos = !settings.onlineArtistPhotos }
                 }
 

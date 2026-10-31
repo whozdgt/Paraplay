@@ -18,6 +18,7 @@ Item {
         sort: "M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4",
         volume: "M4 9v6h4l5 4V5L8 9zM16 9a4 4 0 0 1 0 6",
         menu: "M4 6h16M4 12h16M4 18h16",
+        lyrics: "M4 5h16v11H10l-4 4v-4H4zM8 9h8M8 12h5",
         search: "M18 11a7 7 0 1 1-14 0 7 7 0 0 1 14 0zM20 20l-4-4",
         plus: "M12 5v14M5 12h14",
         camera: "M4 8h4l2-3h4l2 3h4v11H4zM12 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z",

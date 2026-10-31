@@ -7,7 +7,7 @@ Rectangle {
     property var entry: null                 // { name, sub, art, key, remote }
     property string kind: "album"            // album | artist | playlist
 
-    color: Qt.rgba(1, 1, 1, 0.5)
+    color: settings.solid ? settings.boxHover : Qt.rgba(1, 1, 1, 0.5)
 
     Image {
         visible: root.kind !== "artist"

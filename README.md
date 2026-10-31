@@ -50,7 +50,7 @@ Sidebar → SOURCES → **Add a server…**, or Settings → Servers. Pick Navid
 - Format column (e.g. `FLAC 24/96`), green marker on Hi-Res tracks, quality readout in the player bar and expanded player.
 - Local playlists. Search with suggestions.
 - Square cover or spinning record, frosted glass, album-colour glow, theme colours, all in Settings (gear, top right).
-- Lyrics from a `.lrc` file with the same name next to the song.
+- Lyrics: a `.lrc` file with the same name next to the song, lyrics saved in the song's tags, or (switchable) looked up on lrclib.net. Synced lyrics follow the music and you can tap a line to jump to it. On a phone, tap the cover or the lyrics button in the player.
 - Media keys, `playerctl` and waybar media module (MPRIS).
 - Optional profile (username and password, no email) with playlist sync, profile picture and banner.
 - Friends: find people, follow them, see what they play, open public profiles and play their shared playlists from your own copies of the songs. Public or Private profiles, with a Preview of what strangers see. Needs `supabase/social.sql` run once (see below).
@@ -66,6 +66,7 @@ Nothing, unless you turn it on:
 
 - **Profile:** if you make an account, your username, profile text, playlists and pictures are stored in the project's Supabase database. Your music files never leave your computer.
 - **Friends:** who you follow, who you block, and reports you send are stored there too. A playlist is only visible to others if you mark it Shared and your profile allows it; they get song titles, artists, albums and lengths, never files or file paths. "Show what I'm listening to" is off by default; when you turn it on, the title, artist and quality of the song playing are sent while it plays, and removed when you switch it off.
+- **Lyrics:** for a song with no lyrics of its own, its artist, title, album and length are sent to lrclib.net (Settings → Customisation → Look up lyrics online switches it off). Found lyrics are kept on your device, so each song is only asked about once.
 - **Artist pictures:** artist names are sent to Deezer to find a photo (Settings → Customisation switches it off).
 - **Updates:** a request to GitHub's releases page.
 - **Servers:** only the servers you add.

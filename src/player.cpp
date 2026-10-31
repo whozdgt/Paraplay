@@ -372,10 +372,9 @@ void Player::updateCurrent()
     m_cover = coverUrl(t);
     m_coverImg = QImage();
     m_source = (t.isRemote() && m_remote.serverName) ? m_remote.serverName(t.path) : QString();
+    m_remoteCur = t.isRemote();
     if (t.isRemote()) {
         dominant(QImage(), m_glowA, m_glowB);            // default colours until the cover has arrived
-        m_lyricLines.clear();
-        m_lyricTimes.clear();
         if (m_remote.cover) {
             const QString playing = t.path;
             m_remote.cover(t, [this, playing](const QImage &img) {
@@ -387,8 +386,8 @@ void Player::updateCurrent()
         }
     } else {
         dominant(loadCover(t.path, QSize(64, 64)), m_glowA, m_glowB);
-        loadLyrics(t.path);
     }
+    startLyrics();
     m_lyricIdx = -1;
     emit trackChanged();
     emit positionChanged();
@@ -396,34 +395,67 @@ void Player::updateCurrent()
     refreshPlaying();
 }
 
-void Player::loadLyrics(const QString &audioPath)
+// Lyrics for the song that is now current: a .lrc file next to it, then lyrics saved in its tags,
+// then (unless switched off) lrclib.net. Answers from the internet arrive a moment later.
+void Player::startLyrics()
 {
+    if (m_online) m_online->cancel();
     m_lyricLines.clear();
     m_lyricTimes.clear();
-    const QFileInfo fi(audioPath);
-    QFile f(fi.path() + "/" + fi.completeBaseName() + ".lrc");
-    if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) return;
-    static const QRegularExpression re(QStringLiteral(R"(\[(\d+):(\d+)(?:[.:](\d+))?\])"));
-    QVector<std::pair<int, QString>> items;
-    while (!f.atEnd()) {
-        const QString line = QString::fromUtf8(f.readLine()).trimmed();
-        QVector<int> times;
-        qsizetype last = 0;
-        auto it = re.globalMatch(line);
-        while (it.hasNext()) {
-            const auto m = it.next();
-            int ms = m.captured(1).toInt() * 60000 + m.captured(2).toInt() * 1000;
-            const QString frac = m.captured(3);
-            if (!frac.isEmpty()) ms += frac.leftJustified(3, QLatin1Char('0')).left(3).toInt();
-            times.push_back(ms);
-            last = m.capturedEnd();
-        }
-        if (times.isEmpty()) continue;
-        const QString text = line.mid(last).trimmed();
-        for (int ms : times) items.push_back({ms, text});
+    m_lyricSynced = false;
+    m_lyricIdx = -1;
+    m_lyricState = QStringLiteral("none");
+    if (!m_remoteCur) {
+        LyricData d = lyrics::fromSidecar(m_path);
+        QString from = QStringLiteral("file");
+        if (d.isEmpty()) { d = lyrics::fromTags(m_path); from = QStringLiteral("tags"); }
+        if (!d.isEmpty()) { applyLyrics(d, from); return; }
     }
-    std::stable_sort(items.begin(), items.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
-    for (const auto &it : items) { m_lyricTimes.push_back(it.first); m_lyricLines << it.second; }
+    if (!m_onlineLyrics || m_title.isEmpty() || m_artist.isEmpty()) { emit lyricsChanged(); return; }
+    if (!m_online) m_online = new OnlineLyrics(this);
+    m_lyricState = QStringLiteral("searching");
+    emit lyricsChanged();
+    const QString playing = m_path;
+    m_online->request(m_artist, m_title, m_album, int(m_dur + 0.5), [this, playing](OnlineLyrics::Result r, const LyricData &d) {
+        if (m_path != playing) return;
+        if (r == OnlineLyrics::Result::Found) {
+            applyLyrics(d, QStringLiteral("online"));
+        } else {
+            m_lyricState = r == OnlineLyrics::Result::Failed ? QStringLiteral("offline") : QStringLiteral("none");
+            emit lyricsChanged();
+        }
+    });
+}
+
+void Player::applyLyrics(const LyricData &d, const QString &state)
+{
+    m_lyricLines = d.lines;
+    m_lyricSynced = d.synced && d.times.size() == d.lines.size();
+    m_lyricTimes = m_lyricSynced ? d.times : QVector<int>();
+    m_lyricState = d.instrumental ? QStringLiteral("instrumental") : state;
+    m_lyricIdx = -1;
+    emit lyricsChanged();
+    updateLyricIndex();
+}
+
+void Player::setOnlineLyrics(bool on)
+{
+    if (on == m_onlineLyrics) return;
+    m_onlineLyrics = on;
+    if (!on) {
+        if (m_online) m_online->cancel();
+        if (m_lyricState == QLatin1String("searching") || m_lyricState == QLatin1String("offline")) {
+            m_lyricState = QStringLiteral("none");
+            emit lyricsChanged();
+        }
+    } else if (hasTrack() && m_lyricLines.isEmpty() && m_lyricState != QLatin1String("instrumental")) {
+        startLyrics();
+    }
+}
+
+void Player::seekToLyric(int line)
+{
+    if (line >= 0 && line < m_lyricTimes.size()) seek(m_lyricTimes[line] / 1000.0);
 }
 
 void Player::updateLyricIndex()

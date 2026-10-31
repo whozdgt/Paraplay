@@ -18,7 +18,7 @@ Rectangle {
 
     Rectangle {
         anchors.fill: parent
-        color: Qt.rgba(1, 1, 1, 0.35)
+        color: settings.solid ? settings.boxHover : Qt.rgba(1, 1, 1, 0.35)
         visible: ma.containsMouse
     }
     Icon {

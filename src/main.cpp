@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     QSettings st;
     auto *settings = new QQmlPropertyMap(&app);
     const auto flag = [&](const char *k, bool d) { settings->insert(k, st.value(k, d).toBool()); };
-    flag("frosted", true); flag("autoUpdateCheck", true); flag("adaptive", true); flag("lyrics", true); flag("badges", true);
+    flag("frosted", true); flag("autoUpdateCheck", true); flag("adaptive", true); flag("lyrics", true); flag("onlineLyrics", true); flag("badges", true);
     flag("recordCover", false); flag("phoneGrid", false); flag("bitPerfect", true); flag("matchRate", true); flag("artistSplit", true); flag("onlineArtistPhotos", true);
     settings->insert("ringCount", st.value("ringCount", 3).toInt());
     settings->insert("volume", st.value("volume", 100).toInt());
@@ -116,6 +116,7 @@ int main(int argc, char *argv[])
     };
     applySplit();
     player.setVolume(settings->value("volume").toInt());
+    player.setOnlineLyrics(settings->value("onlineLyrics").toBool());
     ArtistImages artistImages;
     artistImages.setOnline(settings->value("onlineArtistPhotos").toBool());
     Playlists playlists(&library);
@@ -137,6 +138,7 @@ int main(int argc, char *argv[])
         if (k == "musicDir") library.scan(v.toString());
         if (k == "volume") player.setVolume(v.toInt());
         if (k == "onlineArtistPhotos") artistImages.setOnline(v.toBool());
+        if (k == "onlineLyrics") player.setOnlineLyrics(v.toBool());
         if (k == "artistSplit" || k == "artistExceptions") applySplit();
     });
 

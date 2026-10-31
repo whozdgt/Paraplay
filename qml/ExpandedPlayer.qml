@@ -4,15 +4,26 @@ import QtQuick.Layouts
 Item {
     id: root
     signal collapse()
-    readonly property bool phone: width < 720          // lyrics move out of the way on a phone
+    readonly property bool phone: width < 720          // on a phone the lyrics replace the cover instead of sitting beside it
+    property bool lyricsOpen: false
+    readonly property bool lyricsMode: phone && settings.lyrics && lyricsOpen
+    readonly property color boxBg: settings.solid ? settings.boxHover : Qt.rgba(1, 1, 1, 0.5)
     readonly property real availW: (settings.lyrics && !phone) ? width - 380 : width
     readonly property color pri: settings.primary
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
 
     IconButton {
         anchors { left: parent.left; leftMargin: 20; top: parent.top; topMargin: 18 }
-        name: "down"; box: 44; iconSize: 22; bg: Qt.rgba(1, 1, 1, 0.5)
+        name: "down"; box: 44; iconSize: 22; bg: root.boxBg
         onClicked: root.collapse()
+    }
+    IconButton {
+        visible: root.phone && settings.lyrics
+        anchors { right: parent.right; rightMargin: 20; top: parent.top; topMargin: 18 }
+        name: "lyrics"; box: 44; iconSize: 22
+        bg: root.lyricsMode ? root.pri : root.boxBg
+        fg: root.lyricsMode ? "white" : root.pri
+        onClicked: root.lyricsOpen = !root.lyricsOpen
     }
 
     ColumnLayout {
@@ -22,12 +33,22 @@ Item {
         spacing: 26
 
         Cover {
+            visible: !root.lyricsMode
             Layout.alignment: Qt.AlignHCenter
             Layout.preferredWidth: Math.max(140, Math.min(300, root.height - 340, root.availW - 64))
             Layout.preferredHeight: Layout.preferredWidth
             source: player.coverSource
             record: settings.recordCover
             spinning: player.playing
+            onClicked: if (root.phone && settings.lyrics) root.lyricsOpen = true
+        }
+        LyricsView {
+            visible: root.lyricsMode
+            Layout.alignment: Qt.AlignHCenter
+            Layout.preferredWidth: root.availW - 32
+            Layout.preferredHeight: Math.max(140, root.height - 410)
+            centered: true
+            fontSize: 18
         }
         ColumnLayout {
             Layout.alignment: Qt.AlignHCenter
@@ -40,7 +61,7 @@ Item {
                 visible: settings.badges && player.hasTrack
                 implicitWidth: chip.implicitWidth + 24
                 implicitHeight: chip.implicitHeight + 10
-                color: Qt.rgba(1, 1, 1, 0.5)
+                color: root.boxBg
                 Rectangle { width: 3; height: parent.height; color: settings.accent }
                 Text {
                     id: chip
@@ -74,35 +95,10 @@ Item {
         visible: settings.lyrics && !root.phone
         width: 340
         anchors { right: parent.right; rightMargin: 48; top: parent.top; topMargin: 88; bottom: parent.bottom; bottomMargin: 72 }
-        Column {
-            anchors.verticalCenter: parent.verticalCenter
-            width: parent.width
-            spacing: 18
-            Text { text: "LYRICS"; font.pixelSize: 11; font.letterSpacing: 1; color: root.muted }
-            Repeater {
-                model: player.lyricLines.length > 0 ? 7 : 0
-                Text {
-                    required property int index
-                    readonly property int idx: player.lyricIndex - 3 + index
-                    readonly property bool active: index === 3
-                    width: lyr.width
-                    leftPadding: 17
-                    wrapMode: Text.Wrap
-                    text: idx >= 0 && idx < player.lyricLines.length ? player.lyricLines[idx] : ""
-                    font.pixelSize: active ? 20 : 16
-                    font.weight: active ? Font.DemiBold : Font.Normal
-                    color: active ? root.pri : root.muted
-                    Rectangle { visible: parent.active && parent.text !== ""; width: 3; height: parent.height; color: settings.accent }
-                }
-            }
-            Text {
-                visible: player.lyricLines.length === 0
-                width: parent.width
-                wrapMode: Text.Wrap
-                color: root.muted
-                font.pixelSize: 14
-                text: "No lyrics found.\nPut a .lrc file with the same name next to the song."
-            }
+        Text { id: lyrLabel; text: "LYRICS"; font.pixelSize: 11; font.letterSpacing: 1; color: root.muted }
+        LyricsView {
+            anchors { top: lyrLabel.bottom; topMargin: 14; left: parent.left; right: parent.right; bottom: parent.bottom }
+            fontSize: 16
         }
     }
 }

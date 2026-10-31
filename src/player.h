@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "library.h"
+#include "lyrics.h"
 
 #ifdef HAVE_MPV
 struct mpv_handle;
@@ -35,7 +36,9 @@ class Player : public QObject {
     Q_PROPERTY(QString coverSource READ coverSource NOTIFY trackChanged)
     Q_PROPERTY(QColor glowA READ glowA NOTIFY trackChanged)
     Q_PROPERTY(QColor glowB READ glowB NOTIFY trackChanged)
-    Q_PROPERTY(QStringList lyricLines READ lyricLines NOTIFY trackChanged)
+    Q_PROPERTY(QStringList lyricLines READ lyricLines NOTIFY lyricsChanged)
+    Q_PROPERTY(bool lyricSynced READ lyricSynced NOTIFY lyricsChanged)
+    Q_PROPERTY(QString lyricState READ lyricState NOTIFY lyricsChanged)   // none, searching, offline, instrumental, file, tags, online
     Q_PROPERTY(int lyricIndex READ lyricIndex NOTIFY lyricIndexChanged)
     Q_PROPERTY(int volume READ volume NOTIFY volumeChanged)
 public:
@@ -70,6 +73,9 @@ public:
     QColor glowB() const { return m_glowB; }
     QStringList lyricLines() const { return m_lyricLines; }
     int lyricIndex() const { return m_lyricIdx; }
+    bool lyricSynced() const { return m_lyricSynced; }
+    QString lyricState() const { return m_lyricState; }
+    void setOnlineLyrics(bool on);
 
     void setBitPerfect(bool on);
     int volume() const { return m_volume; }
@@ -80,6 +86,7 @@ public:
     Q_INVOKABLE void next();
     Q_INVOKABLE void prev();
     Q_INVOKABLE void seek(double seconds);
+    Q_INVOKABLE void seekToLyric(int line);
     void stop();
 
 signals:
@@ -87,6 +94,7 @@ signals:
     void playingChanged();
     void positionChanged();
     void lyricIndexChanged();
+    void lyricsChanged();
     void volumeChanged();
 
 private:
@@ -102,7 +110,8 @@ private:
     void setPaused(bool p);
     void refreshPlaying();
     void updateCurrent();
-    void loadLyrics(const QString &audioPath);
+    void startLyrics();
+    void applyLyrics(const LyricData &d, const QString &state);
     void updateLyricIndex();
     QByteArray pathAt(int pos) const;
 
@@ -126,5 +135,9 @@ private:
     QStringList m_lyricLines;
     QVector<int> m_lyricTimes;
     int m_lyricIdx = -1;
+    bool m_lyricSynced = false;
+    QString m_lyricState = QStringLiteral("none");
+    bool m_onlineLyrics = true, m_remoteCur = false;
+    OnlineLyrics *m_online = nullptr;
     int m_volume = 100;
 };

@@ -23,7 +23,7 @@ Item {
         Rectangle {
             anchors.fill: parent
             visible: !root.record
-            color: Qt.rgba(1, 1, 1, 0.5)
+            color: settings.solid ? settings.boxHover : Qt.rgba(1, 1, 1, 0.5)
             Image {
                 anchors.fill: parent
                 source: root.source
