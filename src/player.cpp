@@ -370,6 +370,7 @@ void Player::updateCurrent()
     m_dur = t.lengthMs / 1000.0;
     m_pos = 0;
     m_cover = coverUrl(t);
+    m_coverImg = QImage();
     m_source = (t.isRemote() && m_remote.serverName) ? m_remote.serverName(t.path) : QString();
     if (t.isRemote()) {
         dominant(QImage(), m_glowA, m_glowB);            // default colours until the cover has arrived
@@ -379,6 +380,7 @@ void Player::updateCurrent()
             const QString playing = t.path;
             m_remote.cover(t, [this, playing](const QImage &img) {
                 if (img.isNull() || m_path != playing) return;
+                m_coverImg = img;
                 dominant(img, m_glowA, m_glowB);
                 emit trackChanged();
             });

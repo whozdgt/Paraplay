@@ -30,6 +30,7 @@
 #endif
 #ifdef Q_OS_ANDROID
 #include "android.h"
+#include "androidmedia.h"
 #endif
 
 int main(int argc, char *argv[])
@@ -132,6 +133,7 @@ int main(int argc, char *argv[])
     Mpris mpris(&player);
 #endif
 #ifdef Q_OS_ANDROID
+    AndroidMedia androidMedia(&player);      // notification, lock-screen controls and playing with the screen off
     // Reading the music folder needs the user's OK. Ask, then scan as soon as they say yes.
     if (android::audioAllowed()) {
         library.scan(dir);

@@ -59,7 +59,7 @@ target_link_libraries(musicplayer PRIVATE
   Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Concurrent Qt6::Network)
 
 if(ANDROID)
-  target_sources(musicplayer PRIVATE src/android.cpp src/android.h)
+  target_sources(musicplayer PRIVATE src/android.cpp src/android.h src/androidmedia.cpp src/androidmedia.h)
   target_link_libraries(musicplayer PRIVATE Qt6::Multimedia taglib_android)
 
   # Version shown in Android's app info, and the number Android compares to decide a newer APK may replace an older one.

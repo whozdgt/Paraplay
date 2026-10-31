@@ -4,6 +4,7 @@
 
 #ifdef Q_OS_ANDROID
 #include <QCoreApplication>
+#include <QMetaObject>
 #include <QJniEnvironment>
 #include <QJniObject>
 
@@ -103,6 +104,79 @@ bool installApk(const QString &path)
     const bool failed = env->ExceptionCheck();
     clearException();
     return !failed;
+}
+
+namespace {
+std::function<void(int, qint64)> g_mediaHandler;
+const char *const kMediaClass = "io/github/whozdgt/paraplay/MediaService";
+
+// Called by MediaService.java (on Android's main thread) when a notification or lock-screen button is pressed.
+void JNICALL nativeMediaCommand(JNIEnv *, jclass, jint cmd, jlong arg)
+{
+    QMetaObject::invokeMethod(qApp, [cmd, arg]() { if (g_mediaHandler) g_mediaHandler(int(cmd), qint64(arg)); }, Qt::QueuedConnection);
+}
+} // namespace
+
+void mediaInit(std::function<void(int, qint64)> handler)
+{
+    g_mediaHandler = std::move(handler);
+    static char name[] = "nativeCommand";
+    static char sig[] = "(IJ)V";
+    const JNINativeMethod methods[] = {{name, sig, reinterpret_cast<void *>(&nativeMediaCommand)}};
+    QJniEnvironment env;
+    if (!env.registerNativeMethods(kMediaClass, methods, 1)) qWarning("media: couldn't register the service's native method");
+}
+
+void mediaUpdate(const QString &title, const QString &artist, const QString &album, qint64 durationMs, qint64 positionMs,
+                 bool playing, bool streaming, const QByteArray &coverJpeg)
+{
+    const QJniObject ctx = QNativeInterface::QAndroidApplication::context();
+    if (!ctx.isValid()) return;
+    QJniEnvironment env;
+    jbyteArray art = nullptr;
+    if (!coverJpeg.isEmpty()) {
+        art = env->NewByteArray(coverJpeg.size());
+        env->SetByteArrayRegion(art, 0, coverJpeg.size(), reinterpret_cast<const jbyte *>(coverJpeg.constData()));
+    }
+    QJniObject::callStaticMethod<void>(kMediaClass, "update",
+        "(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JJZZ[B)V",
+        ctx.object(), QJniObject::fromString(title).object<jstring>(), QJniObject::fromString(artist).object<jstring>(),
+        QJniObject::fromString(album).object<jstring>(), jlong(durationMs), jlong(positionMs),
+        jboolean(playing), jboolean(streaming), art);
+    if (art) env->DeleteLocalRef(art);
+    clearException();
+}
+
+void mediaStop()
+{
+    const QJniObject ctx = QNativeInterface::QAndroidApplication::context();
+    if (!ctx.isValid()) return;
+    QJniObject::callStaticMethod<void>(kMediaClass, "stop", "(Landroid/content/Context;)V", ctx.object());
+    clearException();
+}
+
+bool notificationsAllowed()
+{
+    if (sdkInt() < 33) return true;
+    const QJniObject ctx = QNativeInterface::QAndroidApplication::context();
+    if (!ctx.isValid()) return true;
+    const QJniObject name = QJniObject::fromString(QStringLiteral("android.permission.POST_NOTIFICATIONS"));
+    return ctx.callMethod<jint>("checkSelfPermission", "(Ljava/lang/String;)I", name.object<jstring>()) == 0;
+}
+
+void askNotifications()
+{
+    if (sdkInt() < 33) return;
+    const QJniObject ctx = QNativeInterface::QAndroidApplication::context();
+    if (!ctx.isValid()) return;
+    QJniEnvironment env;
+    const jclass stringClass = env->FindClass("java/lang/String");
+    jobjectArray list = env->NewObjectArray(1, stringClass, nullptr);
+    const QJniObject name = QJniObject::fromString(QStringLiteral("android.permission.POST_NOTIFICATIONS"));
+    env->SetObjectArrayElement(list, 0, name.object<jstring>());
+    ctx.callMethod<void>("requestPermissions", "([Ljava/lang/String;I)V", list, jint(8));
+    env->DeleteLocalRef(list);
+    env->DeleteLocalRef(stringClass);
 }
 
 } // namespace android

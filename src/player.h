@@ -65,6 +65,7 @@ public:
     QString quality() const { return m_quality; }
     bool hires() const { return m_hires; }
     QString coverSource() const { return m_cover; }
+    QImage coverImage() const { return m_coverImg; }        // the cover of a streamed song, once it has arrived
     QColor glowA() const { return m_glowA; }
     QColor glowB() const { return m_glowB; }
     QStringList lyricLines() const { return m_lyricLines; }
@@ -117,6 +118,7 @@ private:
     int m_cur = -1;
     bool m_paused = true, m_idle = true, m_playing = false, m_bitPerfect;
     double m_pos = 0, m_dur = 0;
+    QImage m_coverImg;
     QString m_title, m_artist, m_album, m_path, m_codec, m_badge, m_quality, m_cover, m_source;
     RemoteHooks m_remote;
     bool m_hires = false;
