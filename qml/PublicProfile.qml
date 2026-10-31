@@ -193,7 +193,7 @@ Flickable {
                 visible: root.p.locked === true
                 width: parent.width
                 height: lockCol.implicitHeight + 56
-                color: (settings.dark ? Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.05) : Qt.rgba(1, 1, 1, 0.6))
+                color: (settings.solid ? settings.boxFill : Qt.rgba(1, 1, 1, 0.6))
                 Column {
                     id: lockCol
                     anchors.centerIn: parent

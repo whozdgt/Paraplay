@@ -12,6 +12,7 @@ class AndroidMedia : public QObject {
     Q_OBJECT
 public:
     explicit AndroidMedia(Player *player, QObject *parent = nullptr);
+    ~AndroidMedia() override;
 
 private:
     void schedule();

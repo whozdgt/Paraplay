@@ -191,9 +191,12 @@ public class MediaService extends Service {
     }
 
     @Override public void onTaskRemoved(Intent rootIntent) {
-        // the app was swiped away: the player inside it is gone, so there is nothing left to control
+        // The app was closed from the recent-apps view: the player inside it is gone, so there is nothing left to
+        // control. End the whole process too, so the next launch starts from scratch. (Qt can't start again inside a
+        // process that is still holding the old run, which is what made the app refuse to reopen.)
         shutDown();
         super.onTaskRemoved(rootIntent);
+        android.os.Process.killProcess(android.os.Process.myPid());
     }
 
     @Override public void onDestroy() {

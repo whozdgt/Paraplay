@@ -24,6 +24,8 @@ AndroidMedia::AndroidMedia(Player *player, QObject *parent) : QObject(parent), m
     android::mediaInit([this](int cmd, qint64 arg) { onCommand(cmd, arg); });
 }
 
+AndroidMedia::~AndroidMedia() { android::mediaDetach(); }
+
 void AndroidMedia::schedule() { m_delay.start(); }
 
 void AndroidMedia::push()

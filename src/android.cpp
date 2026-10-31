@@ -113,6 +113,7 @@ const char *const kMediaClass = "io/github/whozdgt/paraplay/MediaService";
 // Called by MediaService.java (on Android's main thread) when a notification or lock-screen button is pressed.
 void JNICALL nativeMediaCommand(JNIEnv *, jclass, jint cmd, jlong arg)
 {
+    if (!qApp || !g_mediaHandler) return;          // the app is already shutting down
     QMetaObject::invokeMethod(qApp, [cmd, arg]() { if (g_mediaHandler) g_mediaHandler(int(cmd), qint64(arg)); }, Qt::QueuedConnection);
 }
 } // namespace
@@ -153,6 +154,12 @@ void mediaStop()
     if (!ctx.isValid()) return;
     QJniObject::callStaticMethod<void>(kMediaClass, "stop", "(Landroid/content/Context;)V", ctx.object());
     clearException();
+}
+
+void mediaDetach()
+{
+    g_mediaHandler = nullptr;
+    mediaStop();
 }
 
 bool notificationsAllowed()

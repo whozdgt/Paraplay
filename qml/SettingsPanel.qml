@@ -122,7 +122,7 @@ Rectangle {
                     Rectangle {
                         visible: Qt.platform.os !== "android"
                         Layout.fillWidth: true; Layout.preferredHeight: 36
-                        color: (settings.dark ? Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.05) : Qt.rgba(1, 1, 1, 0.6)); border.width: 1
+                        color: (settings.solid ? settings.boxFill : Qt.rgba(1, 1, 1, 0.6)); border.width: 1
                         border.color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.3)
                         TextInput {
                             anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
@@ -147,7 +147,7 @@ Rectangle {
                     Text { Layout.fillWidth: true; font.pixelSize: 12; color: root.muted; wrapMode: Text.Wrap; text: "Keep together (one name per line):" }
                     Rectangle {
                         Layout.fillWidth: true; Layout.preferredHeight: 110; Layout.topMargin: 4
-                        color: (settings.dark ? Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.05) : Qt.rgba(1, 1, 1, 0.6)); border.width: 1
+                        color: (settings.solid ? settings.boxFill : Qt.rgba(1, 1, 1, 0.6)); border.width: 1
                         border.color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.3)
                         Flickable {
                             anchors { fill: parent; margins: 8 }
@@ -179,7 +179,7 @@ Rectangle {
                             Layout.fillWidth: true
                             Layout.topMargin: 10
                             Layout.preferredHeight: inner.implicitHeight + 24
-                            color: (settings.dark ? Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.05) : Qt.rgba(1, 1, 1, 0.6))
+                            color: (settings.solid ? settings.boxFill : Qt.rgba(1, 1, 1, 0.6))
                             ColumnLayout {
                                 id: inner
                                 anchors { left: parent.left; right: parent.right; top: parent.top; margins: 12 }
@@ -276,6 +276,24 @@ Rectangle {
                     ColorEditor { title: "Primary"; value: settings.primary; onEdited: (c) => settings.primary = c }
                     ColorEditor { title: "Accent"; value: settings.accent; onEdited: (c) => settings.accent = c }
                     ColorEditor { visible: !settings.frosted; title: "Background (frosted glass off)"; value: settings.bgColor; onEdited: (c) => settings.bgColor = c }
+                    SectionLabel { visible: settings.solid; text: "SELECTION AND BOXES" }
+                    Text {
+                        visible: settings.solid
+                        Layout.fillWidth: true; wrapMode: Text.Wrap; font.pixelSize: 10; lineHeight: 1.4; color: root.muted
+                        text: "The colour behind the song that's playing, the menu item you're on, and boxes like the profile fields. You pick the colour and how strong it is."
+                    }
+                    ColorEditor { visible: settings.solid; title: "Highlight colour"; value: settings.highlight; onEdited: (c) => settings.highlight = c }
+                    Text { visible: settings.solid; Layout.topMargin: 8; text: "Selection strength: " + settings.highlightOpacity + "%"; font.pixelSize: 13; color: root.pri }
+                    Slider255 { visible: settings.solid; Layout.fillWidth: true; maxValue: 50; value: settings.highlightOpacity; onMoved: (v) => settings.highlightOpacity = v }
+                    Text { visible: settings.solid; Layout.topMargin: 8; text: "Boxes and fields strength: " + settings.boxOpacity + "%"; font.pixelSize: 13; color: root.pri }
+                    Slider255 { visible: settings.solid; Layout.fillWidth: true; maxValue: 30; value: settings.boxOpacity; onMoved: (v) => settings.boxOpacity = v }
+                    Rectangle {      // a live sample of the selection colour
+                        visible: settings.solid
+                        Layout.fillWidth: true; Layout.topMargin: 8; Layout.preferredHeight: 44
+                        color: settings.hiSel
+                        Rectangle { width: 3; height: parent.height; color: settings.accent }
+                        Text { anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter } text: "Now playing looks like this"; font.pixelSize: 13; color: root.pri }
+                    }
                 }
 
                 ColumnLayout {

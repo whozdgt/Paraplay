@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <clocale>
 #include <memory>
 
@@ -79,16 +80,32 @@ int main(int argc, char *argv[])
         : st.value("musicDir", QStandardPaths::writableLocation(QStandardPaths::MusicLocation)).toString();
     settings->insert("bgColor", QVariant::fromValue(QColor(st.value("bgColor", "#f3f0f5").toString())));
     settings->insert("musicDir", dir);
-    // "dark" = the page is a dark, solid colour (always on a phone), so light see-through panels would look grey
-    const auto isDark = [settings]() {
+    // How selected rows and boxes are tinted on a solid background (always on a phone): your colour at your strength.
+    // New installs start with white on a dark page, black on a light one.
+    {
+        const QColor bg = settings->value("bgColor").value<QColor>();
+        settings->insert("highlight", QVariant::fromValue(QColor(st.value("highlight", bg.lightnessF() < 0.5 ? "#ffffff" : "#000000").toString())));
+        settings->insert("highlightOpacity", st.value("highlightOpacity", 12).toInt());
+        settings->insert("boxOpacity", st.value("boxOpacity", 5).toInt());
+    }
+    const auto refreshTheme = [settings]() {
 #ifdef Q_OS_ANDROID
         const bool solid = true;
 #else
         const bool solid = !settings->value("frosted").toBool();
 #endif
-        return solid && settings->value("bgColor").value<QColor>().lightnessF() < 0.5;
+        const QColor h = settings->value("highlight").value<QColor>();
+        const auto tint = [&h](double a) { QColor c = h; c.setAlphaF(std::clamp(a, 0.0, 1.0)); return QVariant::fromValue(c); };
+        const double ho = settings->value("highlightOpacity").toInt() / 100.0;
+        const double bo = settings->value("boxOpacity").toInt() / 100.0;
+        settings->insert("solid", solid);
+        settings->insert("hiSel", tint(ho));
+        settings->insert("hiHover", tint(ho / 2));
+        settings->insert("boxFill", tint(bo));
+        settings->insert("boxHover", tint(bo * 1.6));
+        settings->insert("boxLine", tint(std::min(0.4, bo * 3.5)));
     };
-    settings->insert("dark", isDark());
+    refreshTheme();
 
     Library library;
     FolderBrowser folders;
@@ -115,7 +132,7 @@ int main(int argc, char *argv[])
 
     QObject::connect(settings, &QQmlPropertyMap::valueChanged, &app, [&](const QString &k, const QVariant &v) {
         st.setValue(k, v.typeId() == QMetaType::QColor ? QVariant(v.value<QColor>().name()) : v);
-        if (k == "bgColor" || k == "frosted") settings->insert("dark", isDark());
+        if (k == "bgColor" || k == "frosted" || k == "highlight" || k == "highlightOpacity" || k == "boxOpacity") refreshTheme();
         if (k == "bitPerfect") player.setBitPerfect(v.toBool());
         if (k == "musicDir") library.scan(v.toString());
         if (k == "volume") player.setVolume(v.toInt());

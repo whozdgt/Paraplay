@@ -139,7 +139,7 @@ Item {
                             required property var modelData
                             width: parent.width
                             height: 52
-                            color: pma.containsMouse ? (settings.dark ? Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.12) : Qt.rgba(1, 1, 1, 0.55)) : (settings.dark ? Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.07) : Qt.rgba(1, 1, 1, 0.35))
+                            color: pma.containsMouse ? (settings.solid ? settings.boxHover : Qt.rgba(1, 1, 1, 0.55)) : (settings.solid ? settings.boxFill : Qt.rgba(1, 1, 1, 0.35))
                             Rectangle {
                                 id: sq
                                 x: 12

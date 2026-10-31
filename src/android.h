@@ -18,6 +18,7 @@ void mediaInit(std::function<void(int cmd, qint64 arg)> handler);   // cmd: 0 pl
 void mediaUpdate(const QString &title, const QString &artist, const QString &album, qint64 durationMs, qint64 positionMs,
                  bool playing, bool streaming, const QByteArray &coverJpeg);
 void mediaStop();
+void mediaDetach();             // the app is closing: forget the player and take the notification down
 bool notificationsAllowed();    // Android 13+ asks before an app may show notifications
 void askNotifications();   // hands an APK to Android's installer; false if it couldn't be started             // shows the system permission dialog (the result is read back with audioAllowed())
 }

@@ -26,7 +26,7 @@ ListView {
 
         width: ListView.view.width
         height: 56
-        color: current ? (settings.dark ? Qt.rgba(settings.accent.r, settings.accent.g, settings.accent.b, 0.2) : Qt.rgba(1, 1, 1, 0.65)) : (ma.containsMouse ? (settings.dark ? Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.08) : Qt.rgba(1, 1, 1, 0.3)) : "transparent")
+        color: current ? (settings.solid ? settings.hiSel : Qt.rgba(1, 1, 1, 0.65)) : (ma.containsMouse ? (settings.solid ? settings.hiHover : Qt.rgba(1, 1, 1, 0.3)) : "transparent")
 
         Rectangle { visible: row.current; width: 3; height: parent.height; color: settings.accent }
         RowLayout {

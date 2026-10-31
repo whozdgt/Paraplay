@@ -9,9 +9,9 @@ Rectangle {
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
 
     height: 64
-    color: settings.dark ? Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.1) : Qt.rgba(1, 1, 1, 0.5)
+    color: settings.solid ? settings.boxHover : Qt.rgba(1, 1, 1, 0.5)
     border.width: 1
-    border.color: settings.dark ? Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.25) : Qt.rgba(1, 1, 1, 0.8)
+    border.color: settings.solid ? settings.boxLine : Qt.rgba(1, 1, 1, 0.8)
 
     RowLayout {
         anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
