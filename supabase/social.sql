@@ -11,6 +11,28 @@ alter table public.playlists add column if not exists shared           boolean n
 -- The old "friends" setting is gone: a profile is Public or Private.
 update public.profiles set visibility = 'private' where visibility not in ('public', 'private');
 
+-- ============ OLD TABLES WITH THE SAME NAMES ============
+-- If a table called follows, blocks, reports or now_playing already exists from an earlier try and doesn't have the
+-- columns below, it is renamed out of the way (to <name>_old_<date>, nothing is deleted) and a fresh one is made.
+do $$
+declare t record;
+begin
+  for t in select * from (values
+      ('follows',     array['follower','followee','status']),
+      ('blocks',      array['blocker','blocked']),
+      ('reports',     array['reporter','target','reason']),
+      ('now_playing', array['user_id','title','artist','quality','updated_at'])
+    ) as v(tbl, cols)
+  loop
+    if to_regclass('public.' || t.tbl) is not null and exists (
+         select 1 from unnest(t.cols) as c(name)
+         where not exists (select 1 from information_schema.columns
+                           where table_schema = 'public' and table_name = t.tbl and column_name = c.name)) then
+      execute format('alter table public.%I rename to %I', t.tbl, t.tbl || '_old_' || to_char(now(), 'YYMMDDHH24MISS'));
+    end if;
+  end loop;
+end $$;
+
 -- ============ TABLES ============
 create table if not exists public.follows (
   follower   uuid not null references auth.users(id) on delete cascade,
