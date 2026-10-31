@@ -93,6 +93,16 @@ main() {
         rm -f "$desk"
         command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$PREFIX/share/applications" >/dev/null 2>&1 || true
     fi
+    # the app icon: sharp pictures for the common sizes, the drawing for any other size
+    for size in 48 64 128 256 512; do
+        if [ -f "$src/packaging/icons/musicplayer-$size.png" ]; then
+            install -Dm644 "$src/packaging/icons/musicplayer-$size.png" "$PREFIX/share/icons/hicolor/${size}x${size}/apps/musicplayer.png"
+        fi
+    done
+    if [ -f "$src/packaging/musicplayer.svg" ]; then
+        install -Dm644 "$src/packaging/musicplayer.svg" "$PREFIX/share/icons/hicolor/scalable/apps/musicplayer.svg"
+    fi
+    command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -q -t -f "$PREFIX/share/icons/hicolor" >/dev/null 2>&1 || true
 
     step "Checking the new version"
     QT_QPA_PLATFORM=offscreen "$PREFIX/bin/musicplayer" --version 2>/dev/null | tail -n 1 || true

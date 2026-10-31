@@ -1,3 +1,5 @@
+<img src="packaging/icon-512.png" width="96" alt="Paraplay icon">
+
 # Music: a lightweight FLAC / Hi-Res player (Qt Quick + libmpv)
 
 Native C++ and QML. No browser engine, no Python. Playback goes through libmpv, so FLAC, ALAC, WAV, MP3, AAC, OGG and OPUS (including 24-bit and 96/192 kHz files) are decoded by a mature engine, gaplessly.
