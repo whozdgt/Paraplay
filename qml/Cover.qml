@@ -13,6 +13,34 @@ Item {
     width: 44
     height: 44
 
+    // Turn the record by hand (record style, expanded player): clockwise winds the song up, anticlockwise slows it down.
+    // Letting go eases it back to normal. The pitch follows the speed, like a real record.
+    property bool turnable: false
+    property real rate: 1
+    property real extra: 0               // degrees the hand has added to the record's own spin
+    property bool turning: false
+    property bool turned: false          // this press really was a turn, not a tap
+    property real omega: 0               // how fast the hand turns it, degrees per second, clockwise positive
+    property real moved: 0
+    property real lastAngle: 0
+    property real lastT: 0
+    readonly property real perDoubling: 120      // a hand turning 120 degrees a second doubles the speed
+
+    onRateChanged: if (turnable) player.setSpeed(rate)
+    onTurnableChanged: if (!turnable) { settle.stop(); turning = false; rate = 1; player.setSpeed(1) }
+    Component.onDestruction: if (rate !== 1) player.setSpeed(1)
+    NumberAnimation { id: settle; target: root; property: "rate"; to: 1; duration: 450; easing.type: Easing.OutCubic }
+    Timer {      // a hand that stops moving stops changing the speed
+        id: decay
+        interval: 40; repeat: true
+        onTriggered: {
+            if (Date.now() - root.lastT > 90) {
+                root.omega *= 0.7
+                if (root.turning) root.rate = Math.max(0.5, Math.min(2, 1 + root.omega / root.perDoubling))
+            }
+        }
+    }
+
     Item {
         id: zoom
         anchors.fill: parent
@@ -33,6 +61,10 @@ Item {
             }
         }
 
+        Item {
+            id: turner
+            anchors.fill: parent
+            rotation: root.extra
         Item {
             id: disc
             anchors.fill: parent
@@ -93,12 +125,53 @@ Item {
                 }
             }
         }
+        }
+    }
+    Rectangle {      // the speed, while the record is being turned
+        visible: root.turning
+        anchors.centerIn: parent
+        width: rateText.implicitWidth + 24
+        height: 30
+        color: Qt.rgba(0, 0, 0, 0.62)
+        Text { id: rateText; anchors.centerIn: parent; text: root.rate.toFixed(2) + "×"; font.pixelSize: 14; color: "white" }
     }
     MouseArea {
         id: ma
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: root.clicked()
+        function angleAt(x, y) { return Math.atan2(y - height / 2, x - width / 2) * 180 / Math.PI }
+        onPressed: (m) => {
+            if (!root.turnable) return
+            settle.stop()
+            root.turned = false
+            root.moved = 0
+            root.omega = 0
+            root.lastAngle = angleAt(m.x, m.y)
+            root.lastT = Date.now()
+            decay.start()
+        }
+        onPositionChanged: (m) => {
+            if (!pressed || !root.turnable) return
+            if (Math.hypot(m.x - width / 2, m.y - height / 2) < width * 0.08) return      // too near the middle to tell which way
+            const a = angleAt(m.x, m.y)
+            let d = a - root.lastAngle
+            if (d > 180) d -= 360
+            if (d < -180) d += 360
+            const now = Date.now()
+            const dt = Math.max(8, now - root.lastT) / 1000
+            root.lastAngle = a
+            root.lastT = now
+            root.moved += Math.abs(d)
+            if (root.moved > 10) root.turned = true
+            if (!root.turned) return
+            root.turning = true
+            root.extra += d
+            root.omega = root.omega * 0.6 + (d / dt) * 0.4
+            root.rate = Math.max(0.5, Math.min(2, 1 + root.omega / root.perDoubling))
+        }
+        onReleased: { decay.stop(); if (root.turning) { root.turning = false; settle.start() } }
+        onCanceled: { decay.stop(); if (root.turning) { root.turning = false; settle.start() } }
+        onClicked: if (!root.turned) root.clicked()
     }
 }

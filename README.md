@@ -49,7 +49,7 @@ Sidebar → SOURCES → **Add a server…**, or Settings → Servers. Pick Navid
 - Songs, Albums and Artists views; click a song to play, click an album or artist to filter. Cover Flow carousels.
 - Format column (e.g. `FLAC 24/96`), green marker on Hi-Res tracks, quality readout in the player bar and expanded player.
 - Local playlists. Search with suggestions.
-- Square cover or spinning record, frosted glass, album-colour glow, theme colours, all in Settings (gear, top right).
+- Square cover or spinning record, frosted glass, album-colour glow, theme colours, all in Settings (gear, top right). With the record style, turn the record in the full-screen player with your finger or mouse: clockwise speeds the song up, anticlockwise slows it down, and letting go eases it back.
 - Lyrics: a `.lrc` file with the same name next to the song, lyrics saved in the song's tags, or (switchable) looked up on lrclib.net. Synced lyrics follow the music and you can tap a line to jump to it. On a phone, tap the cover or the lyrics button in the player.
 - Media keys, `playerctl` and waybar media module (MPRIS).
 - Optional profile (username and password, no email) with playlist sync, profile picture and banner.

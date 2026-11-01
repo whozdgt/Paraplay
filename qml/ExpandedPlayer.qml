@@ -34,6 +34,7 @@ Item {
             source: player.coverSource
             record: settings.recordCover
             spinning: player.playing
+            turnable: settings.recordCover
             onClicked: if (root.phone && settings.lyrics) root.lyricsOpen = true
         }
         LyricsView {

@@ -330,6 +330,11 @@ Rectangle {
                             }
                         }
                     }
+                    Text {
+                        visible: settings.recordCover
+                        Layout.fillWidth: true; Layout.topMargin: 6; wrapMode: Text.Wrap; font.pixelSize: 10; lineHeight: 1.4; color: root.muted
+                        text: "In the full-screen player, turn the record with your finger or mouse: clockwise speeds the song up, anticlockwise slows it down. Let go and it eases back to normal."
+                    }
                     SectionLabel { text: "RINGS AROUND THE COVER" }
                     RowLayout {
                         Layout.fillWidth: true

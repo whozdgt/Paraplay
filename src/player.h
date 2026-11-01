@@ -41,6 +41,7 @@ class Player : public QObject {
     Q_PROPERTY(QString lyricState READ lyricState NOTIFY lyricsChanged)   // none, searching, offline, instrumental, file, tags, online
     Q_PROPERTY(int lyricIndex READ lyricIndex NOTIFY lyricIndexChanged)
     Q_PROPERTY(int volume READ volume NOTIFY volumeChanged)
+    Q_PROPERTY(double speed READ speed NOTIFY speedChanged)          // 1 = normal; the record turned by hand changes it for a moment
 public:
     // How the player reaches songs that live on a media server (set up once in main.cpp).
     struct RemoteHooks {
@@ -80,6 +81,8 @@ public:
     void setBitPerfect(bool on);
     int volume() const { return m_volume; }
     Q_INVOKABLE void setVolume(int v);
+    double speed() const { return m_speed; }
+    Q_INVOKABLE void setSpeed(double s);                // 0.5 to 2; the pitch follows, like a record
 
     Q_INVOKABLE void playRow(int viewRow);
     Q_INVOKABLE void toggle();
@@ -96,6 +99,7 @@ signals:
     void lyricIndexChanged();
     void lyricsChanged();
     void volumeChanged();
+    void speedChanged();
 
 private:
 #ifdef HAVE_MPV
@@ -140,4 +144,5 @@ private:
     bool m_onlineLyrics = true, m_remoteCur = false;
     OnlineLyrics *m_online = nullptr;
     int m_volume = 100;
+    double m_speed = 1.0;
 };

@@ -12,6 +12,11 @@ Item {
     signal closed()
     width: 440
     height: 44 + (items.length > 0 ? items.length * 40 + 4 : 0)
+    // On a solid theme (phones) the box must hide whatever is behind it, and be a shade that the chosen text colour can be read on.
+    readonly property color fill: settings.solid ? Qt.tint(settings.bgColor, settings.hiSel) : Qt.rgba(1, 1, 1, 0.88)
+    readonly property color rowFill: settings.solid ? fill : Qt.rgba(1, 1, 1, 0.86)
+    readonly property color rowHover: settings.solid ? Qt.tint(fill, settings.hiSel) : Qt.rgba(1, 1, 1, 0.97)
+    readonly property color muted: Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.6)
 
     function open() { picked = false; input.text = ""; input.forceActiveFocus() }
     function choose(item) { picked = true; input.text = item.name; root.chosen(item) }
@@ -19,14 +24,14 @@ Item {
     Rectangle {
         width: parent.width
         height: 44
-        color: Qt.rgba(1, 1, 1, 0.88)
+        color: root.fill
         border.width: 1
-        border.color: Qt.rgba(1, 1, 1, 0.8)
+        border.color: settings.solid ? settings.boxLine : Qt.rgba(1, 1, 1, 0.8)
         Icon { x: 14; anchors.verticalCenter: parent.verticalCenter; name: "search"; size: 18; color: settings.primary }
         Text {
             visible: input.text.length === 0
             anchors { left: parent.left; leftMargin: 44; verticalCenter: parent.verticalCenter }
-            text: "Search…"; font.pixelSize: 14; color: Qt.rgba(0, 0, 0, 0.5)
+            text: "Search…"; font.pixelSize: 14; color: root.muted
         }
         TextInput {
             id: input
@@ -51,7 +56,7 @@ Item {
                 required property var modelData
                 width: parent.width
                 height: 40
-                color: ma.containsMouse ? Qt.rgba(1, 1, 1, 0.97) : Qt.rgba(1, 1, 1, 0.86)
+                color: ma.containsMouse ? root.rowHover : root.rowFill
                 Text {
                     anchors { left: parent.left; leftMargin: 14; right: subText.left; rightMargin: 10; verticalCenter: parent.verticalCenter }
                     text: parent.modelData.name; elide: Text.ElideRight; font.pixelSize: 14; color: settings.primary
@@ -60,7 +65,7 @@ Item {
                     id: subText
                     anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
                     width: Math.min(implicitWidth, 130); elide: Text.ElideRight
-                    text: parent.modelData.sub; font.pixelSize: 12; color: Qt.rgba(0, 0, 0, 0.6)
+                    text: parent.modelData.sub; font.pixelSize: 12; color: root.muted
                 }
                 MouseArea { id: ma; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.choose(parent.modelData) }
             }

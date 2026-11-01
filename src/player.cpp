@@ -105,6 +105,16 @@ void Player::setVolume(int v)
     emit volumeChanged();
 }
 
+void Player::setSpeed(double s)
+{
+    s = std::clamp(s, 0.5, 2.0);
+    if (std::abs(s - m_speed) < 0.01 && s != 1.0) return;      // the finger jitters: ignore tiny changes
+    if (s == m_speed) return;
+    m_speed = s;
+    if (m_qmp) m_qmp->setPlaybackRate(s);
+    emit speedChanged();
+}
+
 QByteArray Player::pathAt(int pos) const
 {
     const Track &t = (*m_tracks)[m_order[pos]];
@@ -162,6 +172,7 @@ Player::Player(Library *lib, bool bitPerfect, bool matchRate, QObject *parent)
     o("network-timeout", "20");
     o("audio-client-name", "Music");
     o("gapless-audio", "yes");
+    o("audio-pitch-correction", "no");     // only matters while the record is turned by hand: then the pitch follows the speed
     o("prefetch-playlist", "yes");
     o("demuxer-max-bytes", "4MiB");        // keep memory small
     o("demuxer-max-back-bytes", "0");
@@ -214,6 +225,16 @@ void Player::setVolume(int v)
     m_volume = v;
     if (m_mpv) mpv_set_property_string(m_mpv, "volume", QByteArray::number(v).constData());
     emit volumeChanged();
+}
+
+void Player::setSpeed(double s)
+{
+    s = std::clamp(s, 0.5, 2.0);
+    if (std::abs(s - m_speed) < 0.01 && s != 1.0) return;      // the finger jitters: ignore tiny changes
+    if (s == m_speed) return;
+    m_speed = s;
+    if (m_mpv) mpv_set_property(m_mpv, "speed", MPV_FORMAT_DOUBLE, &s);
+    emit speedChanged();
 }
 
 void Player::cmd(std::initializer_list<QByteArray> args)
