@@ -185,8 +185,8 @@ Rectangle {
                         Text { width: parent.width; text: row.modelData.t; elide: Text.ElideRight; font.pixelSize: 16; font.weight: Font.DemiBold; color: root.pri }
                         Text { width: parent.width; text: root.summary(row.modelData.k); elide: Text.ElideRight; font.pixelSize: 12; color: root.muted }
                     }
-                    Icon { id: chev; anchors { right: parent.right; rightMargin: 20; verticalCenter: parent.verticalCenter }; name: "chevron"; size: 18; color: root.pri }
-                    Rectangle { anchors { left: parent.left; leftMargin: 64; right: parent.right; bottom: parent.bottom }; height: 1; color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.08) }
+                    Icon { id: chev; anchors.right: parent.right; anchors.rightMargin: 20; anchors.verticalCenter: parent.verticalCenter; name: "chevron"; size: 18; color: root.pri }
+                    Rectangle { anchors.left: parent.left; anchors.leftMargin: 64; anchors.right: parent.right; anchors.bottom: parent.bottom; height: 1; color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.08) }
                     MouseArea { id: rma; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.go(row.modelData.k) }
                 }
             }
