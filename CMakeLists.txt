@@ -152,6 +152,12 @@ elseif(IOS)
   set_source_files_properties(src/iosmedia.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
   target_link_libraries(musicplayer PRIVATE Qt6::Multimedia taglib_static
     "-framework AVFoundation" "-framework MediaPlayer" "-framework UIKit")
+  # Play through Apple's own decoders (AVFoundation). Qt's FFmpeg backend would need FFmpeg built for iOS as well.
+  if(TARGET Qt6::QDarwinMediaPlugin)
+    qt_import_plugins(musicplayer INCLUDE_BY_TYPE multimedia Qt6::QDarwinMediaPlugin)
+  else()
+    message(WARNING "Qt's Darwin media plugin wasn't found; the FFmpeg one needs FFmpeg for iOS")
+  endif()
 
   if(NOT IOS_BUILD_NUMBER)
     set(IOS_BUILD_NUMBER 1)
