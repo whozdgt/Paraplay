@@ -17,15 +17,6 @@ Item {
     readonly property real frac: maxValue > minValue ? Math.max(0, Math.min(1, (value - minValue) / (maxValue - minValue))) : 0
 
     implicitHeight: Qt.platform.os === "android" ? 44 : 36
-    activeFocusOnTab: true
-    Keys.onLeftPressed: root.nudge(-1)
-    Keys.onRightPressed: root.nudge(1)
-
-    function nudge(d) {
-        const v = Math.max(minValue, Math.min(maxValue, value + d * step))
-        moved(v)
-        committed(v)
-    }
 
     Rectangle {
         anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter }
@@ -48,14 +39,6 @@ Item {
         border.color: root.pri
         scale: ma.pressed ? 1.2 : (ma.containsMouse ? 1.1 : 1)
         Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-    }
-    Rectangle {
-        visible: root.visualFocus
-        anchors.centerIn: handle
-        width: handle.width + 10; height: width
-        color: "transparent"
-        border.width: 2
-        border.color: settings.accent
     }
     Rectangle {
         id: bubble
@@ -86,7 +69,7 @@ Item {
             const v = root.minValue + Math.round(f * (root.maxValue - root.minValue) / root.step) * root.step
             return Math.max(root.minValue, Math.min(root.maxValue, v))
         }
-        onPressed: (m) => { root.forceActiveFocus(); root.moved(pick(m.x)) }
+        onPressed: (m) => root.moved(pick(m.x))
         onPositionChanged: (m) => { if (pressed) root.moved(pick(m.x)) }
         onReleased: (m) => root.committed(pick(m.x))
     }

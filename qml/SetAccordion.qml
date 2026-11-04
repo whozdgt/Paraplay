@@ -11,13 +11,10 @@ SettingItem {
     readonly property real headH: inGroup ? (touch ? 64 : 56) : (touch ? 56 : 48)
     readonly property real bleed: inGroup ? 12 : 0
 
-    activeFocusOnTab: true
     implicitHeight: headH + wrap.height
     Accessible.role: Accessible.Button
     Accessible.name: label
     Accessible.onPressAction: root.open = !root.open
-    Keys.onSpacePressed: (e) => { root.open = !root.open; e.accepted = true }
-    Keys.onReturnPressed: (e) => { root.open = !root.open; e.accepted = true }
 
     Rectangle {
         x: -root.bleed; width: root.width + 2 * root.bleed; height: root.headH
@@ -25,13 +22,12 @@ SettingItem {
         opacity: ma.pressed ? 0.10 : (ma.containsMouse ? 0.06 : 0)
         Behavior on opacity { NumberAnimation { duration: 150 } }
     }
-    Rectangle { visible: root.visualFocus; width: parent.width; height: root.headH; color: "transparent"; border.width: 2; border.color: settings.accent }
     MouseArea {
         id: ma
         width: parent.width; height: root.headH
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: { root.forceActiveFocus(); root.open = !root.open }
+        onClicked: root.open = !root.open
     }
     RowLayout {
         width: parent.width; height: root.headH

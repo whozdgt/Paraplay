@@ -12,9 +12,6 @@ Rectangle {
     border.width: primary ? 0 : 1
     border.color: settings.primary
     opacity: enabled ? 1 : 0.5
-    activeFocusOnTab: true
-    Keys.onReturnPressed: root.clicked()
-    Keys.onSpacePressed: root.clicked()
     Accessible.role: Accessible.Button
     Accessible.name: label
     Accessible.onPressAction: root.clicked()
@@ -26,6 +23,5 @@ Rectangle {
         Behavior on opacity { NumberAnimation { duration: 120 } }
     }
     Text { id: lbl; anchors.centerIn: parent; text: root.label; font.pixelSize: 14; color: root.primary ? "white" : settings.primary }
-    Rectangle { visible: root.visualFocus; anchors.fill: parent; anchors.margins: -3; color: "transparent"; border.width: 2; border.color: settings.accent }
     MouseArea { id: ma; anchors.fill: parent; enabled: root.enabled; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.clicked() }
 }

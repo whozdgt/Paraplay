@@ -10,9 +10,6 @@ Rectangle {
     readonly property color pri: settings.primary
 
     height: 44
-    activeFocusOnTab: true
-    Keys.onReturnPressed: root.clicked()
-    Keys.onSpacePressed: root.clicked()
     Accessible.role: Accessible.PageTab
     Accessible.name: text
     Accessible.selected: active
@@ -22,7 +19,6 @@ Rectangle {
     Behavior on color { ColorAnimation { duration: 150 } }
 
     Rectangle { visible: root.active; width: 3; height: parent.height; color: settings.accent }
-    Rectangle { visible: root.visualFocus; anchors.fill: parent; color: "transparent"; border.width: 2; border.color: settings.accent }
     Row {
         x: 14
         anchors.verticalCenter: parent.verticalCenter

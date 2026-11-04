@@ -10,14 +10,11 @@ SettingItem {
     readonly property color pri: settings.primary
     readonly property real bleed: inGroup ? 12 : 0       // the hover tint reaches a little past the row
 
-    activeFocusOnTab: true
     implicitHeight: Math.max(inGroup ? (touch ? 60 : 52) : 44, textCol.implicitHeight + 16)
     Accessible.role: Accessible.CheckBox
     Accessible.name: label
     Accessible.checked: checked
     Accessible.onPressAction: root.toggled()
-    Keys.onSpacePressed: (e) => { root.toggled(); e.accepted = true }
-    Keys.onReturnPressed: (e) => { root.toggled(); e.accepted = true }
 
     Rectangle {
         x: -root.bleed; width: root.width + 2 * root.bleed; height: root.height
@@ -26,7 +23,6 @@ SettingItem {
         Behavior on opacity { NumberAnimation { duration: 150 } }
     }
     Rectangle { visible: root.inGroup; anchors.bottom: parent.bottom; width: parent.width; height: 1; color: root.pri; opacity: 0.08 }
-    Rectangle { visible: root.visualFocus; anchors.fill: parent; color: "transparent"; border.width: 2; border.color: settings.accent }
 
     // under the row's own buttons, so they still get their clicks
     MouseArea {
@@ -34,7 +30,7 @@ SettingItem {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: { root.forceActiveFocus(); root.toggled() }
+        onClicked: root.toggled()
     }
 
     RowLayout {
