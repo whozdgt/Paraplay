@@ -13,10 +13,10 @@ Item {
     signal moved(int v)                           // while dragging
     signal committed(int v)                       // when let go
     readonly property color pri: settings.primary
-    readonly property real knob: Qt.platform.os === "android" ? 22 : 18
+    readonly property real knob: settings.mobile ? 22 : 18
     readonly property real frac: maxValue > minValue ? Math.max(0, Math.min(1, (value - minValue) / (maxValue - minValue))) : 0
 
-    implicitHeight: Qt.platform.os === "android" ? 44 : 36
+    implicitHeight: settings.mobile ? 44 : 36
 
     Rectangle {
         anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter }

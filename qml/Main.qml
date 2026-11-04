@@ -12,13 +12,16 @@ Window {
     title: "Music"
     color: opaque ? settings.bgColor : "transparent"     // phones and Windows can't blur what is behind the window
 
-    readonly property bool android: Qt.platform.os === "android"
+    readonly property bool android: settings.mobile
     readonly property bool opaque: android || Qt.platform.os === "windows"
     // Settings > Look > Interface size. A bigger size needs a bigger window (a phone down to 300 wide, a computer down to 800),
     // so when the window is too small for it, the size is held back until the window grows.
-    readonly property real uiS: Math.max(0.8, Math.min(settings.uiScale / 100, Math.max(1, width / (android ? 300 : 800))))
-    readonly property real lw: width / uiS             // the width and height the app lays itself out in
-    readonly property real lh: height / uiS
+    // A phone draws the app under its status bar and gesture bar; the app keeps to the space between them.
+    readonly property real availW: Math.max(1, width - safeArea.left - safeArea.right)
+    readonly property real availH: Math.max(1, height - safeArea.top - safeArea.bottom)
+    readonly property real uiS: Math.max(0.8, Math.min(settings.uiScale / 100, Math.max(1, availW / (android ? 300 : 800))))
+    readonly property real lw: availW / uiS            // the width and height the app lays itself out in
+    readonly property real lh: availH / uiS
     readonly property bool phone: lw < 720             // one column, menu slides in from the left
     readonly property int gutter: phone ? 16 : 36
     // where the page content starts: below the title, and below the row of buttons (sort, source…) when there is one
@@ -138,6 +141,8 @@ Window {
     // Everything you see lives on this surface. Settings › Look › Interface size scales it, so text, buttons and spacing all grow or shrink together.
     Item {
         id: ui
+        x: safeArea.left
+        y: safeArea.top
         width: win.lw
         height: win.lh
         scale: win.uiS
@@ -394,7 +399,7 @@ Window {
                     onOpenAlbum: (key, name) => win.pick("album", key, name, "home")
                     onOpenPlaylist: (key, name) => win.openPlaylist(key, name, "home")
                     onShowView: (v) => win.navigate(v)
-                    onMenuRequested: (path, gx, gy) => { win.menuPath = path; win.menuX = gx / win.uiS; win.menuY = gy / win.uiS }
+                    onMenuRequested: (path, gx, gy) => { win.menuPath = path; const q = ui.mapFromItem(null, gx, gy); win.menuX = q.x; win.menuY = q.y }
                     onOpenProfile: win.navigate("profile")
                     onSignInRequested: win.authOpen = true
                 }
@@ -430,7 +435,7 @@ Window {
                 }
                 SongList {
                     visible: win.view === "songs"
-                    onMenuRequested: (path, gx, gy) => { win.menuPath = path; win.menuX = gx / win.uiS; win.menuY = gy / win.uiS }
+                    onMenuRequested: (path, gx, gy) => { win.menuPath = path; const q = ui.mapFromItem(null, gx, gy); win.menuX = q.x; win.menuY = q.y }
                     anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: win.contentTop }
                 }
                 Groups {

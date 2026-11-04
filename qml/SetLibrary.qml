@@ -17,16 +17,16 @@ ColumnLayout {
         section: "Library"
         SetBlock {
             label: "Music folder"
-            keywords: "directory folder path scan choose files"
+            keywords: "directory folder path scan rescan choose files"
             Text { text: "Music folder"; font.pixelSize: 14; color: root.pri }
             Text {      // phones: just show where it points; changing it is done with the button below
-                visible: Qt.platform.os === "android"
+                visible: settings.mobile
                 Layout.fillWidth: true
                 wrapMode: Text.WrapAnywhere; font.pixelSize: 13; color: root.muted
                 text: settings.musicDir
             }
             Rectangle {
-                visible: Qt.platform.os !== "android"
+                visible: !settings.mobile
                 Layout.fillWidth: true; Layout.preferredHeight: 40
                 color: root.boxFill
                 border.width: pathInput.activeFocus ? 2 : 1
@@ -40,10 +40,17 @@ ColumnLayout {
                     onAccepted: settings.musicDir = text
                 }
             }
-            Btn { Layout.topMargin: 4; large: true; label: "Choose folder…"; onClicked: root.panel.chooseFolderRequested() }
+            Flow {
+                Layout.topMargin: 4
+                Layout.fillWidth: true
+                spacing: 8
+                Btn { large: true; label: "Choose folder…"; onClicked: root.panel.chooseFolderRequested() }
+                Btn { large: true; primary: false; label: "Scan again"; enabled: !library.scanning; onClicked: library.scan(settings.musicDir) }
+            }
             Text {
                 Layout.fillWidth: true; wrapMode: Text.Wrap; font.pixelSize: 12; lineHeight: 1.25; color: root.muted
-                text: library.scanning ? "Scanning…" : (Qt.platform.os === "android" ? "Tap Choose folder to pick where your music is. It is scanned right away." : "Choose a folder, or type its path and press Enter.")
+                text: library.scanning ? "Scanning…" : (Qt.platform.os === "ios" ? "Copy your music into Files › On My iPhone › Paraplay (or drag it there in Finder on a Mac), then tap Scan again."
+                                     : settings.mobile ? "Tap Choose folder to pick where your music is. It is scanned right away." : "Choose a folder, or type its path and press Enter.")
             }
         }
     }

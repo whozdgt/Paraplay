@@ -10,7 +10,7 @@ Item {
     readonly property color pri: settings.primary
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.62)
     readonly property bool synced: player.lyricSynced
-    readonly property bool android: Qt.platform.os === "android"
+    readonly property bool android: settings.mobile
     readonly property string message: {
         const s = player.lyricState
         if (s === "searching") return "Looking for lyrics…"

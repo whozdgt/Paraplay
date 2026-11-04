@@ -55,6 +55,7 @@ void clearException()
 }
 } // namespace
 
+#ifndef PARAPLAY_STORE
 bool canInstallApks()
 {
     const QJniObject ctx = QNativeInterface::QAndroidApplication::context();
@@ -104,6 +105,24 @@ bool installApk(const QString &path)
     const bool failed = env->ExceptionCheck();
     clearException();
     return !failed;
+}
+#endif
+
+void setSystemBarsLight(bool light)
+{
+    if (sdkInt() < 30) return;          // WindowInsetsController came with Android 11
+    QNativeInterface::QAndroidApplication::runOnAndroidMainThread([light]() {
+        const QJniObject activity = QNativeInterface::QAndroidApplication::context();
+        if (!activity.isValid()) return;
+        const QJniObject window = activity.callObjectMethod("getWindow", "()Landroid/view/Window;");
+        if (!window.isValid()) { clearException(); return; }
+        const QJniObject ctl = window.callObjectMethod("getInsetsController", "()Landroid/view/WindowInsetsController;");
+        if (!ctl.isValid()) { clearException(); return; }
+        // APPEARANCE_LIGHT_STATUS_BARS | APPEARANCE_LIGHT_NAVIGATION_BARS: dark icons, for a light background
+        const jint mask = 8 | 16;
+        ctl.callMethod<void>("setSystemBarsAppearance", "(II)V", light ? mask : jint(0), mask);
+        clearException();
+    });
 }
 
 namespace {

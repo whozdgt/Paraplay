@@ -13,7 +13,7 @@ Item {
     readonly property string query: String(settings.settingsQuery).trim().toLowerCase()
     readonly property bool groupHit: inGroup && host.groupHit === true
     readonly property bool shown: available && (!inGroup || query === "" || groupHit || matches())
-    readonly property bool touch: Qt.platform.os === "android"
+    readonly property bool touch: settings.mobile
 
     visible: shown
     Layout.fillWidth: true

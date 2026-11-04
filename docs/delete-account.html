@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delete your Paraplay account</title>
+<link rel="icon" href="icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header>
+    <img src="icon.png" alt="">
+    <a href="index.html">Paraplay</a>
+    <nav><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="delete-account.html">Delete account</a></nav>
+  </header>
+
+  <h1>Delete your Paraplay account</h1>
+  <p>This deletes your account and everything stored with it, straight away: your profile, profile picture and
+  banner, playlists saved to your account, follows, blocks, reports and listening status. Nothing is kept afterwards.
+  Music files on your devices are not touched.</p>
+  <p class="muted">You can also do this in the app: open your profile and choose Delete account.</p>
+
+  <form class="card" id="form" autocomplete="off">
+    <label for="user">Username</label>
+    <input type="text" id="user" autocapitalize="none" spellcheck="false" required>
+    <label for="pass">Password</label>
+    <input type="password" id="pass" required>
+    <label class="check"><input type="checkbox" id="sure" required> I understand this can't be undone.</label>
+    <button type="submit" id="go">Delete my account</button>
+    <div id="status" role="status" aria-live="polite"></div>
+  </form>
+
+  <h2>Can't sign in?</h2>
+  <p>There is no password reset. <a href="https://github.com/whozdgt/Paraplay/issues/new?title=Delete%20my%20account">Open
+  an issue on GitHub</a> titled "Delete my account" with your username only (never your password), or use the
+  contact address on the app's store page. You may be asked to show that the account is yours, for example from a
+  device where you are still signed in. The account is then deleted within 7 days.</p>
+
+  <footer>Your username and password go straight to Paraplay's account service (Supabase) and are not stored by this page.</footer>
+</main>
+<script>
+// The same steps the app takes (src/account.cpp): sign in, remove the pictures, then delete the account.
+const API = "https://mljdegznscdoctiizyij.supabase.co";
+const KEY = "sb_publishable_Kr-r4bv6fra9NbkDGazdDw_jBQ_x3lk";   // the public key that is also inside the app
+const EMAIL_DOMAIN = "users.invalid";                              // usernames are stored as username@users.invalid
+
+const $ = (id) => document.getElementById(id);
+const say = (text, kind) => { const s = $("status"); s.textContent = text; s.className = kind || ""; };
+
+async function call(method, path, token, body) {
+  const headers = { apikey: KEY, "Content-Type": "application/json" };
+  if (token) headers.Authorization = "Bearer " + token;
+  const r = await fetch(API + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+  let data = null;
+  try { data = await r.json(); } catch (e) { /* an empty reply */ }
+  return { ok: r.ok, status: r.status, data };
+}
+
+async function purge(bucket, uid, token) {
+  for (let round = 0; round < 50; round++) {
+    const list = await call("POST", "/storage/v1/object/list/" + bucket, token, { prefix: uid, limit: 100, offset: 0 });
+    if (!list.ok) { if (list.status === 404 || list.status === 400) return; throw new Error("list " + bucket); }
+    const names = (list.data || []).map((o) => o.name).filter(Boolean).map((n) => uid + "/" + n);
+    if (names.length === 0) return;
+    const del = await call("DELETE", "/storage/v1/object/" + bucket, token, { prefixes: names });
+    if (!del.ok) throw new Error("delete " + bucket);
+    if (names.length < 100) return;
+  }
+}
+
+$("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const user = $("user").value.trim().toLowerCase();
+  const pass = $("pass").value;
+  if (!user || !pass || !$("sure").checked) return;
+  $("go").disabled = true;
+  try {
+    say("Signing in…");
+    const auth = await call("POST", "/auth/v1/token?grant_type=password", null, { email: user + "@" + EMAIL_DOMAIN, password: pass });
+    if (!auth.ok || !auth.data || !auth.data.access_token) {
+      say("That username and password don't match an account.", "err");
+      return;
+    }
+    const token = auth.data.access_token;
+    const uid = auth.data.user && auth.data.user.id;
+    if (!uid) throw new Error("no user id");
+    say("Removing your pictures…");
+    for (const b of ["avatars", "banners", "artist-photos"]) await purge(b, uid, token);
+    say("Deleting your account…");
+    const gone = await call("POST", "/rest/v1/rpc/delete_my_account", token, {});
+    if (!gone.ok) throw new Error("delete_my_account " + gone.status);
+    $("form").reset();
+    say("Your account was deleted. Devices that were signed in will sign out the next time they connect.", "ok");
+  } catch (err) {
+    say("Something went wrong, so the account may not be fully deleted. Try again in a minute, or use the contact below.", "err");
+  } finally {
+    $("go").disabled = false;
+    $("pass").value = "";
+  }
+});
+</script>
+</body>
+</html>

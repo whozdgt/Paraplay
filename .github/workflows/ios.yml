@@ -1,0 +1,128 @@
+name: ios
+
+# Builds the iPhone app on a Mac runner, so a mistake in the iOS code shows up here.
+# The result is NOT signed, so it can't be installed on a phone yet: open the run, scroll to "Artifacts" and you get
+# Paraplay-ios-unsigned.ipa, which proves the app builds and holds what the App Store checks (icon, privacy manifest,
+# Info.plist). To put it on a phone or send it to the App Store, the build has to be signed with your Apple Developer
+# account; STORES.md lists the secrets that needs.
+on:
+  push:
+    branches: [main]
+    paths: ['src/**', 'qml/**', 'packaging/ios/**', 'CMakeLists.txt', '.github/workflows/ios.yml']
+  pull_request:
+    paths: ['src/**', 'qml/**', 'packaging/ios/**', 'CMakeLists.txt', '.github/workflows/ios.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  QT_SERIES: "6.10"            # supports iOS 17 to 26 and Xcode 26 (the App Store requires Xcode 26 since April 2026)
+  TAGLIB_VERSION: v2.0.2
+  IOS_MIN: "17.0"
+
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Xcode 26
+        run: |
+          x="$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)"
+          if [ -z "$x" ]; then echo "::error::No Xcode 26 on this runner"; ls -d /Applications/Xcode*.app; exit 1; fi
+          sudo xcode-select -s "$x/Contents/Developer"
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Pick the Qt version
+        run: |
+          pip3 install --quiet --break-system-packages aqtinstall || pip3 install --quiet aqtinstall
+          v="$(python3 -m aqt list-qt mac ios --spec "$QT_SERIES" --latest-version)"
+          [ -n "$v" ] || { python3 -m aqt list-qt mac ios; exit 1; }
+          echo "Using Qt $v"
+          echo "QT_VERSION=$v" >> "$GITHUB_ENV"
+
+      - name: Cached Qt
+        id: qtcache
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/qt
+          key: qt-ios-${{ env.QT_VERSION }}-v1
+
+      # The build tools run on the Mac (macos), the libraries go into the app (ios).
+      - name: Qt for the Mac and for iOS
+        if: steps.qtcache.outputs.cache-hit != 'true'
+        run: |
+          python3 -m aqt install-qt mac desktop "$QT_VERSION" clang_64 -O "$GITHUB_WORKSPACE/qt"
+          python3 -m aqt install-qt mac ios "$QT_VERSION" ios -m qtmultimedia -O "$GITHUB_WORKSPACE/qt"
+          ls "$GITHUB_WORKSPACE/qt/$QT_VERSION"
+
+      - name: TagLib for iOS (reads song tags)
+        run: |
+          git clone --depth 1 --branch "$TAGLIB_VERSION" --recurse-submodules https://github.com/taglib/taglib.git
+          cmake -S taglib -B taglib-build \
+            -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET="$IOS_MIN" \
+            -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DWITH_ZLIB=OFF \
+            -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+            -DBUILD_TESTING=OFF -DBUILD_EXAMPLES=OFF -DBUILD_BINDINGS=OFF \
+            -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/taglib-ios"
+          cmake --build taglib-build -j"$(sysctl -n hw.ncpu)"
+          cmake --install taglib-build
+          ls -l taglib-ios/lib
+          lipo -info taglib-ios/lib/libtag.a
+
+      - name: Font for the app
+        run: |
+          curl -fsSL -o jbm.zip https://github.com/JetBrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip
+          mkdir -p fonts && unzip -q -j -o jbm.zip 'fonts/ttf/JetBrainsMono-Regular.ttf' 'fonts/ttf/JetBrainsMono-Medium.ttf' \
+            'fonts/ttf/JetBrainsMono-SemiBold.ttf' 'fonts/ttf/JetBrainsMono-Bold.ttf' -d fonts
+          ls fonts
+
+      - name: Configure
+        run: |
+          "$GITHUB_WORKSPACE/qt/$QT_VERSION/ios/bin/qt-cmake" -S . -B build-ios -G Xcode \
+            -DQT_HOST_PATH="$GITHUB_WORKSPACE/qt/$QT_VERSION/macos" \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET="$IOS_MIN" \
+            -DTAGLIB_PREFIX="$GITHUB_WORKSPACE/taglib-ios" \
+            -DIOS_FONT_DIR="$GITHUB_WORKSPACE/fonts" \
+            -DIOS_BUILD_NUMBER="${{ github.run_number }}"
+
+      - name: Build (unsigned)
+        run: |
+          set +e
+          cmake --build build-ios --config Release -- -sdk iphoneos \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" 2>&1 | tee build.log \
+            | grep -E "error:|BUILD (SUCCEEDED|FAILED)" | head -80
+          rc=${PIPESTATUS[0]}
+          if [ "$rc" -ne 0 ]; then
+            esc() { sed -e 's/%/%25/g' | awk '{printf "%s%%0A", substr($0,1,300)}'; }
+            msg="$(grep -E 'error:|fatal|Undefined symbol|ld: ' build.log | sort -u | head -25 | esc)"
+            echo "::error title=build errors::${msg}"
+            msg="$(tail -n 25 build.log | esc)"
+            echo "::error title=end of build log::${msg}"
+          fi
+          exit "$rc"
+
+      - name: Check the app and package it
+        run: |
+          app="$(find build-ios -maxdepth 4 -name '*.app' -path '*Release-iphoneos*' | head -1)"
+          [ -n "$app" ] || { echo "::error::No .app was built"; exit 1; }
+          echo "Built: $app"; du -sh "$app"
+          plutil -p "$app/Info.plist" | grep -E "CFBundle(Identifier|DisplayName|ShortVersionString|Version|Executable)|MinimumOSVersion|UIBackgroundModes|ITSAppUses" -A0
+          ok=1
+          [ -f "$app/PrivacyInfo.xcprivacy" ] && echo "privacy manifest: OK" || { echo "::error::PrivacyInfo.xcprivacy is missing from the app"; ok=0; }
+          [ -f "$app/Assets.car" ] && echo "app icon (Assets.car): OK" || { echo "::error::The app icon catalog is missing"; ok=0; }
+          plutil -extract CFBundleIcons raw "$app/Info.plist" > /dev/null 2>&1 && echo "CFBundleIcons: OK" || echo "::warning::CFBundleIcons isn't in Info.plist"
+          lipo -info "$app/$(plutil -extract CFBundleExecutable raw "$app/Info.plist")"
+          mkdir -p Payload && cp -R "$app" Payload/
+          zip -qr Paraplay-ios-unsigned.ipa Payload
+          ls -l Paraplay-ios-unsigned.ipa
+          [ "$ok" = 1 ]
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Paraplay-ios-unsigned
+          path: Paraplay-ios-unsigned.ipa
+          retention-days: 14

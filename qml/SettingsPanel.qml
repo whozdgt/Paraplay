@@ -20,7 +20,7 @@ Rectangle {
     readonly property bool showList: compact && !pageOpen && !searching
     readonly property color pri: settings.primary
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
-    readonly property bool touch: Qt.platform.os === "android"
+    readonly property bool touch: settings.mobile
     readonly property var cats: [
         { k: "library", t: "Library", icon: "folder" },
         { k: "sound", t: "Sound", icon: "wave" },
@@ -60,7 +60,7 @@ Rectangle {
             for (const s of l) if (layout.isOn(s)) on++
             return on + " of " + l.length + " sections shown"
         }
-        return (Qt.platform.os === "android" ? "Paraplay " : "Music ") + updater.current + " · updates " + (settings.autoUpdateCheck ? "on start" : "off")
+        return (settings.mobile ? "Paraplay " : "Music ") + updater.current + (updater.store ? "" : " · updates " + (settings.autoUpdateCheck ? "on start" : "off"))
     }
 
     // Open a section from outside (the "Update available" chip in the menu).

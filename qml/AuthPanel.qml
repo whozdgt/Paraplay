@@ -79,7 +79,18 @@ Item {
             Text {
                 width: parent.width; wrapMode: Text.Wrap; horizontalAlignment: Text.AlignHCenter; font.pixelSize: 11; lineHeight: 1.4
                 color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.72)
-                text: "Your music files never leave this computer.\nThere is no password reset, so keep your password safe."
+                text: "Your music files never leave this " + (settings.mobile ? "phone" : "computer") + ".\nThere is no password reset, so keep your password safe."
+            }
+            Text {      // the app stores require people to agree to the rules before they can post anything others see
+                width: parent.width; wrapMode: Text.Wrap; horizontalAlignment: Text.AlignHCenter; font.pixelSize: 11; lineHeight: 1.4
+                color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.72)
+                linkColor: root.pri
+                textFormat: Text.StyledText
+                text: (root.creating ? "By creating an account you agree to the " : "Using an account means you agree to the ")
+                      + "<a href=\"https://whozdgt.github.io/Paraplay/terms.html\">Terms</a> (no abusive or hateful content) and the "
+                      + "<a href=\"https://whozdgt.github.io/Paraplay/privacy.html\">Privacy policy</a>."
+                onLinkActivated: (link) => Qt.openUrlExternally(link)
+                HoverHandler { cursorShape: parent.hoveredLink !== "" ? Qt.PointingHandCursor : Qt.ArrowCursor }
             }
         }
     }

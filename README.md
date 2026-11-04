@@ -127,3 +127,10 @@ It is the same player: your music folder, playlists, servers, accounts, friends,
 It is built in GitHub Actions with MSYS2's MinGW toolchain (`.github/workflows/windows.yml`), so building it yourself is: install MSYS2, `pacman -S` the same packages the workflow lists, then `cmake -B build -G Ninja && cmake --build build`.
 
 **Licence note for the Windows download:** it contains mpv and FFmpeg as built by MSYS2 (GPL), Qt and TagLib (LGPL) next to the MIT player. The files `LICENSE.txt` and `THIRD-PARTY.txt` in the download say so, and the source for all of it is public (this repository, and the MSYS2 package sources).
+
+## Google Play and the App Store
+
+Work in progress. The `android` workflow also builds a signed App Bundle for Google Play (job **play**: no self-updater,
+targets Android 16), and the `ios` workflow builds the iPhone app (unsigned until an Apple Developer account is set
+up). [STORES.md](STORES.md) lists each store's requirements, what the app already meets, and the steps left in the
+stores' consoles. The privacy policy, terms and account-deletion page are in `docs/` (served with GitHub Pages).

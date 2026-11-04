@@ -11,8 +11,10 @@
 #include <QJsonObject>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#if QT_CONFIG(process)
 #include <QProcess>
 #include <QProcessEnvironment>
+#endif
 #include <QSettings>
 #include <QStandardPaths>
 #include <QTimer>
@@ -20,7 +22,7 @@
 #include <QVersionNumber>
 
 #include "update_config.h"
-#ifdef Q_OS_ANDROID
+#if defined(Q_OS_ANDROID) && !defined(PARAPLAY_STORE)
 #include "android.h"
 #endif
 
@@ -32,14 +34,24 @@ UpdateChecker::UpdateChecker(QObject *parent) : QObject(parent), m_exe(QCoreAppl
 
 QString UpdateChecker::current() const
 {
-#ifdef Q_OS_ANDROID
+#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
     return QStringLiteral(APP_VERSION " (build %1)").arg(PARAPLAY_BUILD);
 #else
     return QStringLiteral(APP_VERSION);
 #endif
 }
 
-bool UpdateChecker::configured() const { return kUpdateRepo[0] != '\0'; }
+// Google Play and the App Store don't allow an app to update itself: in a store build the updater does nothing.
+bool UpdateChecker::store() const
+{
+#ifdef PARAPLAY_STORE
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool UpdateChecker::configured() const { return !store() && kUpdateRepo[0] != '\0'; }
 
 QString UpdateChecker::scriptPath() const
 {
@@ -122,6 +134,7 @@ void UpdateChecker::install()
     installAndroid();
     return;
 #endif
+#if QT_CONFIG(process)      // iPhones can't run other programs (and have no updater anyway)
     if (!m_available || m_installing || m_installed || !canInstall()) return;
     m_installing = true;
     m_tail.clear();
@@ -154,16 +167,19 @@ void UpdateChecker::install()
     m_proc->setProcessEnvironment(env);
     // low priority, so the music doesn't stutter while it builds
     m_proc->start(QStringLiteral("nice"), {QStringLiteral("-n"), QStringLiteral("10"), QStringLiteral("bash"), scriptPath(), QStringLiteral("--tag"), m_tag});
+#endif
 }
 
 void UpdateChecker::restart()
 {
+#if QT_CONFIG(process)
     QString exe = m_exe;
     if (exe.endsWith(QLatin1String(" (deleted)"))) exe.chop(10);       // the file was replaced while we were running
     QStringList args = QCoreApplication::arguments();
     if (!args.isEmpty()) args.removeFirst();
     // a short pause lets this copy hand back its MPRIS name first
     QProcess::startDetached(QStringLiteral("sh"), QStringList{QStringLiteral("-c"), QStringLiteral("sleep 1; exec \"$0\" \"$@\""), exe} + args);
+#endif
     QCoreApplication::quit();
 }
 
@@ -229,7 +245,7 @@ void UpdateChecker::checkAndroid(bool manual)
 
 void UpdateChecker::installAndroid()
 {
-#ifdef Q_OS_ANDROID
+#if defined(Q_OS_ANDROID) && !defined(PARAPLAY_STORE)
     if (!m_available || m_installing) return;
     if (!android::canInstallApks()) {
         // Android asks once, per app, before an app may install other apps (including itself).
@@ -289,7 +305,7 @@ void UpdateChecker::installAndroid()
 
 void UpdateChecker::launchInstaller()
 {
-#ifdef Q_OS_ANDROID
+#if defined(Q_OS_ANDROID) && !defined(PARAPLAY_STORE)
     if (android::installApk(m_apkPath))
         setStatus(QStringLiteral("Tap Install in the Android prompt. If it says the app conflicts with the existing one, uninstall Paraplay once and install the update by hand."));
     else

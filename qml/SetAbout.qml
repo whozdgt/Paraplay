@@ -16,16 +16,18 @@ ColumnLayout {
         ValueRow {
             label: "Version"
             keywords: "about version build release"
-            value: (Qt.platform.os === "android" ? "Paraplay " : "Music ") + updater.current
+            value: (settings.mobile ? "Paraplay " : "Music ") + updater.current
         }
         ToggleRow {
+            available: !updater.store              // a Play Store or App Store build is updated by the store
             label: "Check for updates on start"
-            note: Qt.platform.os === "android" ? "Asks GitHub for a newer build, at most once an hour" : "Asks GitHub for the newest version, at most twice a day"
+            note: settings.mobile ? "Asks GitHub for a newer build, at most once an hour" : "Asks GitHub for the newest version, at most twice a day"
             keywords: "update upgrade github automatic"
             checked: settings.autoUpdateCheck
             onToggled: settings.autoUpdateCheck = !settings.autoUpdateCheck
         }
         SetBlock {
+            available: !updater.store
             label: "Check now"
             keywords: "update upgrade install check now restart release page"
             Text {
@@ -55,12 +57,12 @@ ColumnLayout {
                     : "To update from inside the player, install it once with ./update.sh --here from the project folder."
             }
             Rectangle {
-                visible: updater.installing && Qt.platform.os === "android"
+                visible: updater.installing && settings.mobile
                 Layout.fillWidth: true; Layout.preferredHeight: 4; color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.2)
                 Rectangle { width: parent.width * updater.progress; height: parent.height; color: settings.accent }
             }
             Text {
-                visible: updater.installing && Qt.platform.os !== "android"
+                visible: updater.installing && !settings.mobile
                 Layout.fillWidth: true; wrapMode: Text.Wrap; font.pixelSize: 12; lineHeight: 1.3; color: root.muted
                 text: "The new version is built on this computer at low priority, so music keeps playing. This can take a few minutes."
             }
@@ -68,6 +70,26 @@ ColumnLayout {
     }
 
     SetGroup {
+        title: "Privacy"
+        section: "About"
+        SetBlock {
+            label: "Privacy policy and terms"
+            keywords: "privacy policy terms data delete account legal"
+            Text {
+                Layout.fillWidth: true; wrapMode: Text.Wrap; font.pixelSize: 12; lineHeight: 1.3; color: root.muted
+                text: "No ads, no tracking. Your music stays on your device; an account is optional."
+            }
+            Flow {
+                Layout.fillWidth: true
+                spacing: 8
+                Btn { large: true; primary: false; label: "Privacy policy"; onClicked: Qt.openUrlExternally("https://whozdgt.github.io/Paraplay/privacy.html") }
+                Btn { large: true; primary: false; label: "Terms"; onClicked: Qt.openUrlExternally("https://whozdgt.github.io/Paraplay/terms.html") }
+            }
+        }
+    }
+
+    SetGroup {
+        visible: !updater.store
         title: "What's new"
         section: "About"
         SetBlock {

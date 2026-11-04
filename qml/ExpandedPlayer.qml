@@ -93,7 +93,7 @@ Item {
             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.lyricsOpen = !root.lyricsOpen }
         }
         RowLayout {
-            visible: Qt.platform.os !== "android"        // phones have volume keys
+            visible: !settings.mobile        // phones have volume keys
             Layout.alignment: Qt.AlignHCenter
             spacing: 10
             Icon { name: "volume"; size: 20; color: root.pri }

@@ -39,6 +39,9 @@ QVariantList FolderBrowser::roots() const
         if (r.startsWith(QLatin1String("/storage/")) && !r.startsWith(QLatin1String("/storage/emulated")) && v.isValid() && v.isReady())
             add(v.displayName().isEmpty() ? QStringLiteral("SD card") : v.displayName(), r);
     }
+#elif defined(Q_OS_IOS)
+    // the only place an iPhone app may look: its own folder (Files › On My iPhone › Paraplay)
+    add(QStringLiteral("Paraplay folder"), QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
 #elif defined(Q_OS_WIN)
     add(QStringLiteral("Music"), QStandardPaths::writableLocation(QStandardPaths::MusicLocation));
     add(QStringLiteral("Home"), QDir::homePath());

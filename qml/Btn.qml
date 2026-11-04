@@ -7,7 +7,7 @@ Rectangle {
     property bool large: false           // a taller button (44, or 48 on a phone), as in Settings
     signal clicked()
     implicitWidth: lbl.implicitWidth + 36
-    implicitHeight: large ? (Qt.platform.os === "android" ? 48 : 44) : 40
+    implicitHeight: large ? (settings.mobile ? 48 : 44) : 40
     color: primary ? settings.primary : "transparent"
     border.width: primary ? 0 : 1
     border.color: settings.primary

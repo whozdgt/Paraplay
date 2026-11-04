@@ -14,6 +14,7 @@
 #include <QQuickWindow>
 #include <QSettings>
 #include <QStandardPaths>
+#include <QStyleHints>
 #include <QTimer>
 
 #include "account.h"
@@ -24,6 +25,7 @@
 #include "player.h"
 #include "playlists.h"
 #include "playstats.h"
+#include "safearea.h"
 #include "servers.h"
 #include "social.h"
 #include "updater.h"
@@ -33,6 +35,9 @@
 #ifdef Q_OS_ANDROID
 #include "android.h"
 #include "androidmedia.h"
+#endif
+#ifdef Q_OS_IOS
+#include "iosmedia.h"
 #endif
 #ifdef Q_OS_WIN
 #include <cstdio>
@@ -47,7 +52,7 @@ int main(int argc, char *argv[])
     for (int i = 1; i < argc; ++i)
         if (!std::strcmp(argv[i], "--version") || !std::strcmp(argv[i], "-v")) { std::printf("musicplayer %s\n", APP_VERSION); return 0; }
 #endif
-#if !defined(Q_OS_ANDROID) && !defined(Q_OS_WIN)
+#if !defined(Q_OS_ANDROID) && !defined(Q_OS_WIN) && !defined(Q_OS_IOS)
     QQuickWindow::setDefaultAlphaBuffer(true);   // transparent window so the compositor can blur behind it
 #endif
     QGuiApplication app(argc, argv);
@@ -57,7 +62,7 @@ int main(int argc, char *argv[])
     QGuiApplication::setOrganizationName("musicplayer");
     QGuiApplication::setDesktopFileName("musicplayer");   // Wayland app_id / window class
 
-#if defined(Q_OS_ANDROID) || defined(Q_OS_WIN)
+#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS) || defined(Q_OS_WIN)
     // phones and most Windows PCs don't have JetBrains Mono, so the build packs it into the app
     const QDir fontDir(QStringLiteral(":/fonts"));
     for (const QString &f : fontDir.entryList({QStringLiteral("*.ttf"), QStringLiteral("*.otf")}, QDir::Files))
@@ -91,11 +96,22 @@ int main(int argc, char *argv[])
     settings->insert("volume", st.value("volume", 100).toInt());
     settings->insert("artistExceptions", st.value("artistExceptions",
         QStringLiteral("Earth, Wind & Fire\nTyler, The Creator\nSimon & Garfunkel\nHall & Oates\nBrooks & Dunn")).toString());
+#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
+    settings->insert("mobile", true);                 // a phone: touch-sized controls, one column, no window frame
+#else
+    settings->insert("mobile", false);
+#endif
     settings->insert("primary", QVariant::fromValue(QColor(st.value("primary", "#000000").toString())));
     settings->insert("accent", QVariant::fromValue(QColor(st.value("accent", "#16a34a").toString())));
-    const QString dir = cli.isSet(dirOpt)
-        ? cli.value(dirOpt)
-        : st.value("musicDir", QStandardPaths::writableLocation(QStandardPaths::MusicLocation)).toString();
+#ifdef Q_OS_IOS
+    // An iPhone app can only read its own folder. The Files app shows it as On My iPhone › Paraplay, and a Mac's
+    // Finder shows it when the phone is plugged in: that is where the music goes.
+    const QString defaultDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    QDir().mkpath(defaultDir);
+#else
+    const QString defaultDir = QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
+#endif
+    const QString dir = cli.isSet(dirOpt) ? cli.value(dirOpt) : st.value("musicDir", defaultDir).toString();
     settings->insert("bgColor", QVariant::fromValue(QColor(st.value("bgColor", "#f3f0f5").toString())));
     settings->insert("musicDir", dir);
     // How selected rows and boxes are tinted on a solid background (always on a phone): your colour at your strength.
@@ -107,7 +123,7 @@ int main(int argc, char *argv[])
         settings->insert("boxOpacity", st.value("boxOpacity", 5).toInt());
     }
     const auto refreshTheme = [settings]() {
-#if defined(Q_OS_ANDROID) || defined(Q_OS_WIN)
+#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS) || defined(Q_OS_WIN)
         const bool solid = true;          // phones and Windows can't blur what is behind the window
 #else
         const bool solid = !settings->value("frosted").toBool();
@@ -124,6 +140,21 @@ int main(int argc, char *argv[])
         settings->insert("boxLine", tint(std::min(0.4, bo * 3.5)));
     };
     refreshTheme();
+
+    // Phones show the app's background behind the status bar: its icons go dark on a light background, light on a dark one.
+    const auto applyBars = [settings]() {
+#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
+        const bool light = settings->value("bgColor").value<QColor>().lightnessF() >= 0.5;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
+        QGuiApplication::styleHints()->setColorScheme(light ? Qt::ColorScheme::Light : Qt::ColorScheme::Dark);
+#endif
+#ifdef Q_OS_ANDROID
+        android::setSystemBarsLight(light);
+#endif
+#else
+        Q_UNUSED(settings)
+#endif
+    };
 
     Library library;
     FolderBrowser folders;
@@ -154,6 +185,7 @@ int main(int argc, char *argv[])
         if (k == "settingsQuery") return;            // the search box is not a setting: never saved
         st.setValue(k, v.typeId() == QMetaType::QColor ? QVariant(v.value<QColor>().name()) : v);
         if (k == "bgColor" || k == "frosted" || k == "highlight" || k == "highlightOpacity" || k == "boxOpacity") refreshTheme();
+        if (k == "bgColor") applyBars();
         if (k == "bitPerfect") player.setBitPerfect(v.toBool());
         if (k == "musicDir") library.scan(v.toString());
         if (k == "volume") player.setVolume(v.toInt());
@@ -177,14 +209,21 @@ int main(int argc, char *argv[])
     ctx->setContextProperty("stats", &stats);
     ctx->setContextProperty("folders", &folders);
     ctx->setContextProperty("updater", &updater);
+    SafeArea safeArea;
+    ctx->setContextProperty("safeArea", &safeArea);
     engine.loadFromModule("Music", "Main");
     if (engine.rootObjects().isEmpty()) return 1;
+    safeArea.watch(qobject_cast<QWindow *>(engine.rootObjects().first()));
+    applyBars();
 
 #ifdef HAVE_MPRIS
     Mpris mpris(&player);
 #endif
 #ifdef Q_OS_WIN
     WinMedia winMedia(&player);              // the keyboard's media keys
+#endif
+#ifdef Q_OS_IOS
+    IosMedia iosMedia(&player);              // keeps playing with the screen locked; lock-screen controls
 #endif
 #ifdef Q_OS_ANDROID
     AndroidMedia androidMedia(&player);      // notification, lock-screen controls and playing with the screen off

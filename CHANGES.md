@@ -1,3 +1,12 @@
+# Store builds: Google Play bundle and a first iPhone build
+- **Google Play:** the Android workflow now also builds a signed App Bundle (`.aab`) for Play. That build has no self-updater and doesn't ask to install apps, because Play only allows updates through Play. CI checks it with Google's bundletool (target API 36, no install permission, 16 KB-aligned native code). Download it from the run's artifacts.
+- **Android 16:** the app now targets API 36 and is built with Qt 6.10. Android draws apps edge to edge now, so the app keeps clear of the status bar and gesture bar, and their icons turn dark or light to suit your background colour. Back still steps back instead of closing the app.
+- **iPhone:** a new `ios` workflow builds the app with Xcode 26. Music keeps playing with the screen locked, the lock screen and Control Centre show the song with play, pause, skip and seek, and a phone call pauses it. Music goes into the app's folder (Files › On My iPhone › Paraplay). Not signed yet, so it can't be installed until there's an Apple Developer account.
+- **Privacy policy, terms and account deletion on the web** (`docs/`, for GitHub Pages): both stores require them. The sign-in screen and Settings › About link to them, and an account can now be deleted from a web page as well as in the app.
+- Settings › Library: **Scan again** button.
+- Store builds hide the update settings in Settings › About.
+- [STORES.md](STORES.md): each store's requirements, what's done, and what's left to do in the stores' consoles.
+
 # Drop 7: friends, public profiles and a profile preview
 - **Friends** (sidebar, under Playlists): Activity, Find people, and Requests. Activity shows what the people you follow are playing right now (with the song's quality), what they played earlier, and the playlists they chose to share.
 - **Public profiles:** open anyone's profile from Find people, Activity or Requests: picture, banner, bio, follower counts, shared playlists, and what they're listening to. Follow with one press; a Private profile gets a "Request" instead.

@@ -511,8 +511,9 @@ QString Account::cacheDir() const
 
 QString Account::localFileUrl(const QString &source) const
 {
-    // Android's picture picker hands over a content:// address, not a file path. Copy it into the cache first.
-    if (source.trimmed().startsWith(QLatin1String("content:"))) {
+    // Android's picture picker hands over a content:// address, and the iPhone's an assets-library:// one, not a file
+    // path. Copy it into the cache first.
+    if (source.trimmed().startsWith(QLatin1String("content:")) || source.trimmed().startsWith(QLatin1String("assets-library:"))) {
         QFile in(source.trimmed());
         if (!in.open(QIODevice::ReadOnly)) return {};
         if (in.size() > kMaxPickBytes) return {};

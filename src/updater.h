@@ -21,6 +21,7 @@ class UpdateChecker : public QObject {
     Q_PROPERTY(bool installing READ installing NOTIFY changed)
     Q_PROPERTY(bool installed READ installed NOTIFY changed)       // built and installed, waiting for a restart
     Q_PROPERTY(bool canInstall READ canInstall CONSTANT)
+    Q_PROPERTY(bool store READ store CONSTANT)                     // an app-store build: the store does the updating
     Q_PROPERTY(QString status READ status NOTIFY changed)
     Q_PROPERTY(QString notes READ notes NOTIFY changed)
     Q_PROPERTY(double progress READ progress NOTIFY changed)        // 0..1 while an APK downloads
@@ -35,6 +36,7 @@ public:
     bool installing() const { return m_installing; }
     bool installed() const { return m_installed; }
     bool canInstall() const;
+    bool store() const;
     QString status() const { return m_status; }
     QString notes() const { return m_notes; }
     double progress() const { return m_progress; }

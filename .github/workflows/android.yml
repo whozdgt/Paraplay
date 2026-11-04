@@ -1,6 +1,10 @@
 name: android
 
-# Builds the Android app (an APK you can install on a phone).
+# Builds the Android app, two ways at once:
+#  - sideload: the APK you install on a phone yourself, which can update itself from GitHub
+#  - play:     the App Bundle (.aab) for Google Play. It has no self-updater and no permission to install apps
+#              (Play doesn't allow either). It is never published here: download it from the run's Artifacts and
+#              upload it in Play Console. See STORES.md.
 #  - every push to main and every pull request: builds it, so a mistake shows up here, and keeps the APK for 14 days
 #    (open the run, scroll to "Artifacts")
 #  - a version tag like v0.7.0: also attaches the APK to that release
@@ -19,24 +23,31 @@ on:
   push:
     branches: [main]
     tags: ['v*']
-    paths: ['android/**', 'src/**', 'qml/**', 'CMakeLists.txt', '.github/workflows/android.yml']
+    paths: ['android/**', 'src/**', 'qml/**', 'CMakeLists.txt', '.github/workflows/android.yml', '.github/scripts/**']
   pull_request:
-    paths: ['android/**', 'src/**', 'qml/**', 'CMakeLists.txt', '.github/workflows/android.yml']
+    paths: ['android/**', 'src/**', 'qml/**', 'CMakeLists.txt', '.github/workflows/android.yml', '.github/scripts/**']
   workflow_dispatch:
 
 permissions:
   contents: write      # to attach the APK to a release
 
 env:
-  QT_VERSION: 6.8.3
-  NDK_VERSION: 26.1.10909125
-  BUILD_TOOLS: 34.0.0
+  QT_SERIES: "6.10"          # the newest 6.10.x is used: Qt 6.10 supports Android 16 (API 36), which Play requires
+  NDK_VERSION: 27.2.12479018  # the NDK Qt 6.10 itself is built with (r27c)
+  SDK_PLATFORM: 36
+  BUILD_TOOLS: 36.0.0
   TAGLIB_VERSION: v2.0.2
+  BUNDLETOOL_VERSION: 1.18.1
 
 jobs:
   apk:
+    name: ${{ matrix.variant }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 75
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [sideload, play]
     steps:
       - uses: actions/checkout@v4
 
@@ -46,34 +57,26 @@ jobs:
           java-version: 17
 
       # Qt is installed twice: the build tools run on this machine (gcc_64), the libraries are for the phone.
-      - name: Qt for this machine (build tools)
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: ${{ env.QT_VERSION }}
-          host: linux
-          target: desktop
-          arch: linux_gcc_64
-          modules: qtmultimedia
-          dir: ${{ github.workspace }}/qt
-          set-env: false
-          cache: true
-          cache-key-prefix: qt-host
-
-      - name: Qt for Android (libraries for the phone)
+      - name: Pick the Qt version
         run: |
           pip install --quiet aqtinstall
-          # since Qt 6.7 the Android packages are listed under "all_os"; try the older place as well
-          for host in all_os linux; do
-            echo "Trying host: $host"
-            if aqt install-qt "$host" android "$QT_VERSION" android_arm64_v8a -m qtmultimedia -O "$GITHUB_WORKSPACE/qt/Qt"; then
-              ok=1; break
-            fi
-          done
-          if [ -z "${ok:-}" ]; then
-            aqt list-qt all_os android --arch "$QT_VERSION" || true
-            aqt list-qt linux android --arch "$QT_VERSION" || true
-            exit 1
-          fi
+          v="$(aqt list-qt all_os android --spec "$QT_SERIES" --latest-version)"
+          [ -n "$v" ] || { aqt list-qt all_os android; exit 1; }
+          echo "Using Qt $v"
+          echo "QT_VERSION=$v" >> "$GITHUB_ENV"
+
+      - name: Cached Qt
+        id: qtcache
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/qt/Qt
+          key: qt-android-${{ env.QT_VERSION }}-v1
+
+      - name: Qt for this machine and for Android
+        if: steps.qtcache.outputs.cache-hit != 'true'
+        run: |
+          aqt install-qt linux desktop "$QT_VERSION" linux_gcc_64 -m qtmultimedia -O "$GITHUB_WORKSPACE/qt/Qt"
+          aqt install-qt all_os android "$QT_VERSION" android_arm64_v8a -m qtmultimedia -O "$GITHUB_WORKSPACE/qt/Qt"
           ls "$GITHUB_WORKSPACE/qt/Qt/$QT_VERSION"
 
       - name: Android SDK and NDK
@@ -81,7 +84,7 @@ jobs:
           export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-            "platforms;android-34" "build-tools;${BUILD_TOOLS}" "ndk;${NDK_VERSION}" > /dev/null
+            "platforms;android-${SDK_PLATFORM}" "build-tools;${BUILD_TOOLS}" "ndk;${NDK_VERSION}" > /dev/null
           echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
           echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
 
@@ -90,7 +93,7 @@ jobs:
           git clone --depth 1 --branch "$TAGLIB_VERSION" --recurse-submodules https://github.com/taglib/taglib.git
           cmake -S taglib -B taglib-build -G Ninja \
             -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake" \
-            -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-28 \
+            -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-28 -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON \
             -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
             -DBUILD_TESTING=OFF -DBUILD_EXAMPLES=OFF -DBUILD_BINDINGS=OFF \
             -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/taglib-android"
@@ -120,12 +123,14 @@ jobs:
             -DTAGLIB_PREFIX="$GITHUB_WORKSPACE/taglib-android" \
             -DANDROID_OPENSSL_DIR="$GITHUB_WORKSPACE/openssl" \
             -DANDROID_FONT_DIR="$FONT_DIR" \
+            -DPARAPLAY_STORE=${{ matrix.variant == 'play' && 'ON' || 'OFF' }} \
             -DANDROID_VERSION_CODE="${{ github.run_number }}"
 
-      - name: Build the APK
+      - name: Build
         run: |
           set +e
-          cmake --build build-android --target apk 2>&1 | tee build.log
+          target=apk; [ "${{ matrix.variant }}" = play ] && target=aab
+          cmake --build build-android --target "$target" 2>&1 | tee build.log
           rc=${PIPESTATUS[0]}
           if [ "$rc" -ne 0 ]; then
             # put the useful lines where the Actions API shows them (the full log needs a sign-in)
@@ -139,6 +144,7 @@ jobs:
 
       - name: Sign
         id: sign
+        if: matrix.variant == 'sideload'
         env:
           KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -160,7 +166,7 @@ jobs:
               -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Paraplay build"
             echo "No signing secrets set: signed with a throwaway key (see the top of this file)."
           fi
-          "$bt/zipalign" -f -p 4 "$src" aligned.apk
+          "$bt/zipalign" -f -P 16 4 "$src" aligned.apk       # 16 KB pages, for Android 15+ phones that use them
           "$bt/apksigner" sign --ks release.jks --ks-key-alias "$alias" --ks-pass "pass:$pass" --key-pass "pass:$pass" \
             --out "Paraplay-${ver}-arm64.apk" aligned.apk
           "$bt/apksigner" verify --print-certs "Paraplay-${ver}-arm64.apk"
@@ -169,14 +175,77 @@ jobs:
           echo "ver=${ver}" >> "$GITHUB_OUTPUT"
           ls -l Paraplay-*.apk
 
+      - name: Check the APK
+        if: matrix.variant == 'sideload'
+        run: |
+          apk="${{ steps.sign.outputs.apk }}"
+          "$ANDROID_HOME/build-tools/${BUILD_TOOLS}/aapt2" dump badging "$apk" | grep -E "^(package|sdkVersion|targetSdkVersion)" || true
+          "$ANDROID_HOME/build-tools/${BUILD_TOOLS}/zipalign" -c -P 16 4 "$apk" && echo "zip alignment: OK"
+          rm -rf so && mkdir so && unzip -q -o "$apk" 'lib/*' -d so
+          bash .github/scripts/check-16k.sh so || echo "::warning title=16 KB pages::Some native libraries aren't 16 KB aligned (see log)"
+
       - uses: actions/upload-artifact@v4
+        if: matrix.variant == 'sideload'
         with:
           name: Paraplay-android
           path: ${{ steps.sign.outputs.apk }}
           retention-days: 14
 
+      # ---- Google Play: sign the bundle with the upload key, then check it the way Play will ----
+      - name: Sign the bundle (Play)
+        id: signaab
+        if: matrix.variant == 'play'
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          ver="$(sed -n 's/^project(musicplayer VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)"
+          src="$(find build-android -name '*.aab' | sort | head -1)"
+          [ -n "$src" ] || { echo "::error::No .aab was built"; find build-android -maxdepth 4 -type d -name outputs; exit 1; }
+          echo "Built: $src"
+          out="Paraplay-${ver}-build${{ github.run_number }}-play.aab"
+          cp "$src" "$out"
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > release.jks
+            alias="${KS_ALIAS:-paraplay}"; pass="${KS_PASS:-paraplay-release}"
+            echo "Signing with your own key (use it as the upload key in Play Console)."
+          else
+            pass="paraplay-throwaway"; alias="paraplay"
+            keytool -genkeypair -keystore release.jks -alias "$alias" -storepass "$pass" -keypass "$pass" \
+              -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Paraplay build"
+            echo "::warning::No signing secrets set: the bundle is signed with a throwaway key, so Play won't accept it."
+          fi
+          jarsigner -keystore release.jks -storepass "$pass" -keypass "$pass" -sigalg SHA256withRSA -digestalg SHA-256 "$out" "$alias"
+          jarsigner -verify "$out" | tail -1
+          rm -f release.jks
+          echo "aab=$out" >> "$GITHUB_OUTPUT"
+          ls -l "$out"
+
+      - name: Check the bundle (Play)
+        if: matrix.variant == 'play'
+        run: |
+          aab="${{ steps.signaab.outputs.aab }}"
+          curl -fsSL -o bundletool.jar "https://github.com/google/bundletool/releases/download/${BUNDLETOOL_VERSION}/bundletool-all-${BUNDLETOOL_VERSION}.jar"
+          java -jar bundletool.jar validate --bundle="$aab" > validate.txt && echo "bundletool validate: OK"
+          java -jar bundletool.jar dump manifest --bundle="$aab" > manifest.xml
+          grep -o 'android:targetSdkVersion="[0-9]*"' manifest.xml
+          grep -q 'android:targetSdkVersion="36"' manifest.xml || { echo "::error::The bundle doesn't target API 36"; exit 1; }
+          if grep -q REQUEST_INSTALL_PACKAGES manifest.xml; then echo "::error::The Play bundle still asks to install apps"; exit 1; fi
+          echo "No REQUEST_INSTALL_PACKAGES: OK"
+          grep -o 'uses-permission[^>]*android:name="[^"]*"' manifest.xml | sed 's/.*name=/  permission: /'
+          rm -rf so && mkdir so && unzip -q -o "$aab" 'base/lib/*' -d so
+          bash .github/scripts/check-16k.sh so
+
+      - uses: actions/upload-artifact@v4
+        if: matrix.variant == 'play'
+        with:
+          name: Paraplay-play-aab
+          path: ${{ steps.signaab.outputs.aab }}
+          retention-days: 30
+
       - name: Attach to the release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: matrix.variant == 'sideload' && startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -191,6 +260,7 @@ jobs:
       # then downloads Paraplay-android.apk. It is a pre-release, so it never counts as the desktop's "latest release".
       - name: Publish as the newest build (for in-app updates)
         if: >-
+          matrix.variant == 'sideload' &&
           steps.sign.outputs.real == 'true' && github.ref == 'refs/heads/main' &&
           (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         env:

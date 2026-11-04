@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paraplay privacy policy</title>
+<link rel="icon" href="icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header>
+    <img src="icon.png" alt="">
+    <a href="index.html">Paraplay</a>
+    <nav><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="delete-account.html">Delete account</a></nav>
+  </header>
+
+  <h1>Privacy policy</h1>
+  <p class="muted">Last updated 4 November 2026. Applies to Paraplay on Android, iPhone, Linux and Windows.</p>
+
+  <p>Paraplay is a music player for music you already have: files on your device, or a server you run yourself.
+  It has no ads, no analytics and no tracking, and nothing about you is sold or shared for advertising.</p>
+
+  <h2>Without an account</h2>
+  <p>You can use Paraplay without an account. Your music, playlists, listening history and settings then stay on your
+  device. The only things that leave it are these, and each can be switched off in Settings:</p>
+  <div class="table-wrap"><table>
+    <tr><th>Feature</th><th>What is sent</th><th>To</th><th>Setting</th></tr>
+    <tr><td>Lyrics</td><td>The playing song's title, artist, album and length</td><td><a href="https://lrclib.net">lrclib.net</a></td><td>Look › Lyrics and pictures</td></tr>
+    <tr><td>Artist pictures</td><td>Artist names</td><td><a href="https://www.deezer.com">Deezer</a>'s public API</td><td>Look › Lyrics and pictures</td></tr>
+    <tr><td>Update check (only the versions downloaded from GitHub, not store versions)</td><td>A request for the newest version number</td><td>GitHub</td><td>About › Updates</td></tr>
+    <tr><td>Your own media server</td><td>Your sign-in for that server, and requests for your music</td><td>The server you added</td><td>Library › Servers</td></tr>
+  </table></div>
+  <p>These requests carry no account or device identifier. Like any internet request, they show your IP address to the
+  service that answers it.</p>
+
+  <h2>With an account</h2>
+  <p>An account is optional. It lets you keep playlists across devices and follow friends. It is made with a username
+  and a password only: no email address, phone number or real name is asked for. Accounts are stored by
+  <a href="https://supabase.com">Supabase</a>, which runs Paraplay's database and file storage.</p>
+  <p>An account stores:</p>
+  <ul>
+    <li>your username and your password (kept only as a secure hash);</li>
+    <li>a display name, short bio, profile picture and banner, if you add them;</li>
+    <li>playlists you save to your account (their names and each song's title, artist, album and length);</li>
+    <li>who you follow, follow requests, and people you block;</li>
+    <li>reports you make about other accounts, so they can be reviewed;</li>
+    <li>the song you're playing right now, but only while you've switched on sharing what you listen to;</li>
+    <li>your privacy choices (for example whether your profile is public).</li>
+  </ul>
+  <p>What other people can see depends on your choices: a private profile shows only your name and picture, and only
+  people you accept can see more. Your music files are never uploaded.</p>
+
+  <h2>Why it's used</h2>
+  <p>Only to make the features above work. It is not used for advertising, profiling or tracking, and it is not sold.</p>
+
+  <h2>How long it's kept, and deleting it</h2>
+  <p>Account data is kept until you delete the account. Deleting it removes your profile, pictures, playlists, follows,
+  blocks, reports and listening status straight away; nothing is kept afterwards.</p>
+  <ul>
+    <li>In the app: open your profile and choose <strong>Delete account</strong>.</li>
+    <li>Without the app: use the <a href="delete-account.html">delete your account</a> page.</li>
+    <li>You can also download a copy of your account data in the app (profile, <strong>Export my data</strong>).</li>
+  </ul>
+
+  <h2>Security</h2>
+  <p>Connections to Paraplay's database, lyrics and artist pictures use encryption (https). A media server you add
+  yourself is reached the way you set it up, which at home is often plain http on your own network.</p>
+
+  <h2>Children</h2>
+  <p>Paraplay isn't made for children under 13, and accounts aren't meant for them.</p>
+
+  <h2>Changes and contact</h2>
+  <p>If this policy changes, the new version is posted here with a new date. Questions or requests:
+  <a href="https://github.com/whozdgt/Paraplay/issues">open an issue on GitHub</a>, or use the contact address on the
+  app's store page.</p>
+
+  <footer>Paraplay is open source: <a href="https://github.com/whozdgt/Paraplay">github.com/whozdgt/Paraplay</a></footer>
+</main>
+</body>
+</html>

@@ -5,7 +5,7 @@ Rectangle {
     id: root
     readonly property color pri: settings.primary
 
-    implicitHeight: Qt.platform.os === "android" ? 48 : 40
+    implicitHeight: settings.mobile ? 48 : 40
     color: settings.solid ? settings.boxFill : Qt.rgba(1, 1, 1, 0.6)
     border.width: input.activeFocus ? 2 : 1
     border.color: input.activeFocus ? settings.accent : Qt.rgba(pri.r, pri.g, pri.b, 0.3)

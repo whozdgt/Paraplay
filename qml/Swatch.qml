@@ -8,7 +8,7 @@ Item {
     property bool selected: false
     signal picked()
 
-    width: Qt.platform.os === "android" ? 48 : 40
+    width: settings.mobile ? 48 : 40
     height: width
     Accessible.role: Accessible.RadioButton
     Accessible.name: name
@@ -18,7 +18,7 @@ Item {
     Rectangle {
         id: face
         anchors.centerIn: parent
-        width: Qt.platform.os === "android" ? 40 : 32
+        width: settings.mobile ? 40 : 32
         height: width
         color: root.swatch
         border.width: 1
