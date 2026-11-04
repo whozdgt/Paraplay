@@ -4,9 +4,11 @@
     android:installLocation="auto"
     android:versionCode="-- %%INSERT_VERSION_CODE%% --"
     android:versionName="-- %%INSERT_VERSION_NAME%% --">
-    <!-- %%INSERT_PERMISSIONS -->
-    <!-- %%INSERT_FEATURES -->
+    <!-- Only the permissions listed here. (Qt's permissions placeholder, left out on purpose, would add Qt Multimedia's camera,
+         microphone, Bluetooth and storage-writing permissions, which a music player doesn't use.) -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <!-- Android 13 and newer ask for "audio files", older versions for "storage". -->
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />

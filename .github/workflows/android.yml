@@ -234,6 +234,9 @@ jobs:
           if grep -q REQUEST_INSTALL_PACKAGES manifest.xml; then echo "::error::The Play bundle still asks to install apps"; exit 1; fi
           echo "No REQUEST_INSTALL_PACKAGES: OK"
           grep -o 'uses-permission[^>]*android:name="[^"]*"' manifest.xml | sed 's/.*name=/  permission: /'
+          for p in CAMERA RECORD_AUDIO BLUETOOTH WRITE_EXTERNAL_STORAGE; do
+            if grep -q "android.permission.$p\"" manifest.xml; then echo "::error::The Play bundle asks for $p, which the app doesn't use"; exit 1; fi
+          done
           rm -rf so && mkdir so && unzip -q -o "$aab" 'base/lib/*' -d so
           bash .github/scripts/check-16k.sh so
 
