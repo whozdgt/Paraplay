@@ -38,7 +38,10 @@ jobs:
         continue-on-error: true      # a hint only: it can't test everything without a screen or a sound card
         run: |
           QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software timeout 8 ./build/musicplayer --music /tmp 2>&1 | tee ui.log || true
-          if grep -E "(qrc:|qml).*(error|Error|is not a type|Cannot assign|ReferenceError|TypeError)" ui.log; then
+          pattern="(qrc:|qml).*(error|Error|is not a type|Cannot assign|ReferenceError|TypeError|Unable to assign|binding loop)"
+          if grep -E "$pattern" ui.log; then
+            # the first few lines also go into the run's annotations, so they can be read without opening the log
+            grep -E "$pattern" ui.log | head -12 | while IFS= read -r line; do echo "::warning::${line}"; done
             echo "::warning::The interface printed errors while loading (see log)"
             exit 1
           fi

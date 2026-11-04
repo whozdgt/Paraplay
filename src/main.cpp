@@ -86,6 +86,8 @@ int main(int argc, char *argv[])
     settings->insert("homeOff", st.value("homeOff", "").toString());       // sections the person switched off
     settings->insert("homeTop", st.value("homeTop", "4w").toString());     // top artists: "4w" or "all"
     settings->insert("ringCount", st.value("ringCount", 3).toInt());
+    settings->insert("uiScale", std::clamp(st.value("uiScale", 100).toInt(), 80, 150));   // Settings › Look › Interface size, in percent
+    settings->insert("settingsQuery", QString());     // what is typed in the Settings search box; only lives while the window is open
     settings->insert("volume", st.value("volume", 100).toInt());
     settings->insert("artistExceptions", st.value("artistExceptions",
         QStringLiteral("Earth, Wind & Fire\nTyler, The Creator\nSimon & Garfunkel\nHall & Oates\nBrooks & Dunn")).toString());
@@ -149,6 +151,7 @@ int main(int argc, char *argv[])
         [&](const Track &t, std::function<void(const QImage &)> cb) { servers.loadCover(t.serverId(), t.cover, std::move(cb)); }});
 
     QObject::connect(settings, &QQmlPropertyMap::valueChanged, &app, [&](const QString &k, const QVariant &v) {
+        if (k == "settingsQuery") return;            // the search box is not a setting: never saved
         st.setValue(k, v.typeId() == QMetaType::QColor ? QVariant(v.value<QColor>().name()) : v);
         if (k == "bgColor" || k == "frosted" || k == "highlight" || k == "highlightOpacity" || k == "boxOpacity") refreshTheme();
         if (k == "bitPerfect") player.setBitPerfect(v.toBool());

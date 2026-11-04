@@ -19,7 +19,14 @@ Rectangle {
     Rectangle {
         anchors.fill: parent
         color: settings.solid ? settings.boxHover : Qt.rgba(1, 1, 1, 0.35)
-        visible: ma.containsMouse
+        opacity: ma.containsMouse ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 120 } }
+    }
+    Rectangle {      // a little darker while pressed
+        anchors.fill: parent
+        color: settings.primary
+        opacity: ma.pressed ? 0.10 : 0
+        Behavior on opacity { NumberAnimation { duration: 80 } }
     }
     Icon {
         anchors.centerIn: parent

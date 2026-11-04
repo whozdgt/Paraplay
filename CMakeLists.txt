@@ -65,6 +65,9 @@ qt_add_qml_module(musicplayer
     qml/QualityChip.qml qml/NavItem.qml qml/Sidebar.qml qml/SongList.qml
     qml/Groups.qml qml/Carousel.qml qml/PlayerBar.qml qml/ExpandedPlayer.qml qml/SettingsPanel.qml
     qml/SectionLabel.qml qml/ToggleRow.qml qml/Slider255.qml qml/ColorEditor.qml
+    qml/SettingItem.qml qml/SetGroup.qml qml/SetBlock.qml qml/SetAccordion.qml qml/SetSlider.qml qml/SliderRow.qml
+    qml/ValueRow.qml qml/SetNavItem.qml qml/SetSearch.qml qml/Swatch.qml qml/HexField.qml qml/ThemeEditor.qml
+    qml/SetLibrary.qml qml/SetSound.qml qml/SetLook.qml qml/SetHome.qml qml/SetAbout.qml
     qml/ArtistPhoto.qml qml/SearchBar.qml qml/NamePrompt.qml
     qml/Btn.qml qml/AuthPanel.qml qml/ProfilePage.qml qml/Avatar.qml qml/ImagePopup.qml
     qml/CoverTile.qml qml/Field.qml qml/AddServerPanel.qml

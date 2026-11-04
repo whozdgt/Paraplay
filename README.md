@@ -25,17 +25,17 @@ To just try it without installing:
     cmake --build build -j
     ./build/musicplayer --music ~/Music
 
-The music folder is remembered after the first run. Change it in Settings → Directories (press Enter to scan). The library is cached on disk, so later starts only re-check changed files.
+The music folder is remembered after the first run. Change it in Settings → Library (press Enter to scan). The library is cached on disk, so later starts only re-check changed files.
 
 ## Updates
 
-Settings → Updates. The player asks GitHub for the newest release (at most twice a day, switch it off there) and shows "Update available" at the bottom of the sidebar. **Update now** downloads that release's source, builds it on your computer at low priority (music keeps playing) and installs it; then **Restart**. Building on your own machine means it always matches your Qt, mpv and TagLib. In-app updating works once the player was installed with `./update.sh --here`.
+Settings → About. The player asks GitHub for the newest release (at most twice a day, switch it off there) and shows "Update available" at the bottom of the sidebar. **Update now** downloads that release's source, builds it on your computer at low priority (music keeps playing) and installs it; then **Restart**. Building on your own machine means it always matches your Qt, mpv and TagLib. In-app updating works once the player was installed with `./update.sh --here`.
 
 Releases are made by pushing a tag such as `v0.6.1`; the version must match `project(musicplayer VERSION …)` in `CMakeLists.txt`. The release notes are the top section of `CHANGES.md`.
 
 ## Your own server (Navidrome, Subsonic, Jellyfin)
 
-Sidebar → SOURCES → **Add a server…**, or Settings → Servers. Pick Navidrome / Subsonic or Jellyfin, enter the address, username and password.
+Sidebar → SOURCES → **Add a server…**, or Settings → Library. Pick Navidrome / Subsonic or Jellyfin, enter the address, username and password.
 
 - Songs play as the **original files**, never re-encoded, with the same quality badges.
 - "All sources / This computer / your server" filters Songs, Albums and Artists. A small cloud marks streamed music.
@@ -49,11 +49,11 @@ Sidebar → SOURCES → **Add a server…**, or Settings → Servers. Pick Navid
 - Songs, Albums and Artists views; click a song to play, click an album or artist to filter. Cover Flow carousels.
 - Format column (e.g. `FLAC 24/96`), green marker on Hi-Res tracks, quality readout in the player bar and expanded player.
 - Local playlists. Search with suggestions.
-- Square cover or spinning record, frosted glass, album-colour glow, theme colours, all in Settings (gear, top right). With the record style, turn the record in the full-screen player with your finger or mouse: clockwise speeds the song up, anticlockwise slows it down, and letting go eases it back.
+- Settings (gear, top right) has five sections: Library, Sound, Look, Home and About, plus a search box that finds any setting. Look has the interface size (80–150%), frosted glass, album-colour glow, theme colours, lyrics, and square cover or spinning record. With the record style, turn the record in the full-screen player with your finger or mouse: clockwise speeds the song up, anticlockwise slows it down, and letting go eases it back.
 - Lyrics: a `.lrc` file with the same name next to the song, lyrics saved in the song's tags, or (switchable) looked up on lrclib.net. Synced lyrics follow the music and you can tap a line to jump to it. On a phone, tap the cover or the lyrics button in the player.
 - Media keys, `playerctl` and waybar media module (MPRIS).
 - Optional profile (username and password, no email) with playlist sync, profile picture and banner.
-- Home page: a greeting, then the sections you choose in Settings → Home page (switch them on or off, move them up or down). Signed in, it shows your friends and what they are playing, follow requests, and your top artists; as a guest it shows your playlists, albums and songs, with a small "Sign up / in" button beside "Guest".
+- Home page: a greeting, then the sections you choose in Settings → Home (switch them on or off, move them up or down). Signed in, it shows your friends and what they are playing, follow requests, and your top artists; as a guest it shows your playlists, albums and songs, with a small "Sign up / in" button beside "Guest".
 - Friends: find people (the person-with-a-plus button on Home), follow them, see what they play, open public profiles and play their shared playlists from your own copies of the songs. Public or Private profiles, with a Preview of what strangers see. Needs `supabase/social.sql` run once (see below).
 - Keys: Space play/pause, Left/Right seek 5 s, N / P next / previous, Esc close panel.
 
@@ -67,9 +67,9 @@ Nothing, unless you turn it on:
 
 - **Profile:** if you make an account, your username, profile text, playlists and pictures are stored in the project's Supabase database. Your music files never leave your computer.
 - **Friends:** who you follow, who you block, and reports you send are stored there too. A playlist is only visible to others if you mark it Shared and your profile allows it; they get song titles, artists, albums and lengths, never files or file paths. "Show what I'm listening to" is off by default; when you turn it on, the title, artist and quality of the song playing are sent while it plays, and removed when you switch it off.
-- **Top artists:** the Home page counts what you play (a play is half the song, or 30 seconds) in a plain file on your device. It is never uploaded, and Settings → Home page can wipe it.
-- **Lyrics:** for a song with no lyrics of its own, its artist, title, album and length are sent to lrclib.net (Settings → Customisation → Look up lyrics online switches it off). Found lyrics are kept on your device, so each song is only asked about once.
-- **Artist pictures:** artist names are sent to Deezer to find a photo (Settings → Customisation switches it off).
+- **Top artists:** the Home page counts what you play (a play is half the song, or 30 seconds) in a plain file on your device. It is never uploaded, and Settings → Home can wipe it.
+- **Lyrics:** for a song with no lyrics of its own, its artist, title, album and length are sent to lrclib.net (Settings → Look → Look up lyrics online switches it off). Found lyrics are kept on your device, so each song is only asked about once.
+- **Artist pictures:** artist names are sent to Deezer to find a photo (Settings → Look switches it off).
 - **Updates:** a request to GitHub's releases page.
 - **Servers:** only the servers you add.
 
@@ -92,7 +92,7 @@ The player asks for the file's own sample rate, but PipeWire decides what the so
 
 then `systemctl --user restart pipewire pipewire-pulse wireplumber`.
 
-- **Bit-perfect output** (Settings → Audio): when on, no ReplayGain or volume changes are applied.
+- **Bit-perfect output** (Settings → Sound): when on, no ReplayGain or volume changes are applied.
 - **Match track sample rate:** when off, output is forced to 48 kHz. It takes effect on the next start.
 
 ## Memory notes
@@ -118,7 +118,7 @@ Download the newest build from the [windows-latest release](https://github.com/w
 
 It is the same player: your music folder, playlists, servers, accounts, friends, lyrics and Home page all work. Differences on Windows:
 
-- The window is solid instead of frosted glass (Windows can't blur what is behind a window the way Hyprland can). Pick the background colour in Settings, Theme colours.
+- The window is solid instead of frosted glass (Windows can't blur what is behind a window the way Hyprland can). Pick the background colour in Settings → Look → Theme colours.
 - Media keys (play/pause, next, previous, stop) work, even while another program has the focus. Windows' own volume pop-up does not show the song yet.
 - Output goes through the system mixer (WASAPI shared mode), so "Bit-perfect output" can't change the sample rate Windows uses.
 - To update, download the newer Paraplay-Setup.exe and run it over the old one; your settings stay. The in-app "Update now" button is Linux and Android only for now.
