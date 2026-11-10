@@ -12,7 +12,7 @@ Flickable {
 
     clip: true
     contentWidth: width
-    contentHeight: col.implicitHeight + 24
+    contentHeight: col.implicitHeight + 34
     boundsBehavior: Flickable.StopAtBounds
 
     // one line in a list: an icon, a name and, on the right, a count or a tick
@@ -51,6 +51,7 @@ Flickable {
     Column {
         id: col
         x: root.gutter
+        y: 10
         width: root.width - 2 * root.gutter
         spacing: 0
 

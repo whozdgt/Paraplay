@@ -60,8 +60,8 @@ Item {
             font.pixelSize: 15
             color: settings.inkSoft
         }
+        Item { width: 1; height: 18 }
         Row {
-            topPadding: 18
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 14
             IconButton {
