@@ -21,12 +21,14 @@ Item {
     Rectangle {
         anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter }
         height: 4
+        radius: settings.round ? 2 : 0
         color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.2)
     }
     Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         width: handle.x + handle.width / 2
         height: 4
+        radius: settings.round ? 2 : 0
         color: root.fill
     }
     Rectangle {
@@ -34,6 +36,7 @@ Item {
         x: root.frac * (root.width - width)
         anchors.verticalCenter: parent.verticalCenter
         width: root.knob; height: root.knob
+        radius: settings.round ? width / 2 : 0
         color: "white"
         border.width: 2
         border.color: root.pri
@@ -49,6 +52,7 @@ Item {
         y: -height - 2
         width: bubbleText.implicitWidth + 16
         height: 24
+        radius: settings.round ? 12 : 0
         color: root.pri
         Text {
             id: bubbleText

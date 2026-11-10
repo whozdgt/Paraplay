@@ -156,7 +156,7 @@ Flickable {
                         width: 130; height: 36
                         color: sel ? root.pri : "transparent"
                         border.width: 1; border.color: sel ? root.pri : Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.3)
-                        Text { anchors.centerIn: parent; text: parent.modelData.t; font.pixelSize: 13; color: parent.sel ? "white" : root.pri }
+                        Text { anchors.centerIn: parent; text: parent.modelData.t; font.pixelSize: 13; color: parent.sel ? settings.onInk : root.pri }
                         MouseArea {
                             anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                             onClicked: { root.vis = parent.modelData.k; if (root.vis === "public") root.disc = true }

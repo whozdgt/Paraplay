@@ -10,7 +10,16 @@ ListView {
     boundsBehavior: Flickable.StopAtBounds
     readonly property bool compact: width < 560      // phone: title over artist, no quality column
     readonly property color pri: settings.ink
-    readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
+    readonly property color muted: settings.round ? settings.inkSoft : Qt.rgba(pri.r, pri.g, pri.b, 0.72)
+    readonly property bool showHeader: settings.round && library.filterKind !== ""
+
+    // Midnight: an album, artist or playlist page starts with its cover, name, Shuffle and Play
+    header: Item {
+        width: ListView.view ? ListView.view.width : 0
+        height: list.showHeader ? albumHead.implicitHeight : 0
+        visible: list.showHeader
+        AlbumHeader { id: albumHead; width: parent.width; visible: list.showHeader }
+    }
 
     delegate: Rectangle {
         id: row
@@ -25,12 +34,14 @@ ListView {
         readonly property bool current: player.path === path
 
         width: ListView.view.width
-        height: 56
+        height: settings.round && list.compact ? 62 : 56
+        radius: settings.round ? 12 : 0
         color: current ? (settings.solid ? settings.hiSel : Qt.rgba(1, 1, 1, 0.65)) : (ma.containsMouse ? (settings.solid ? settings.hiHover : Qt.rgba(1, 1, 1, 0.3)) : "transparent")
 
-        Rectangle { visible: row.current; width: 3; height: parent.height; color: settings.accent }
+        Rectangle { visible: row.current && !settings.round; width: 3; height: parent.height; color: settings.accent }
         RowLayout {
-            anchors { fill: parent; leftMargin: 14; rightMargin: 14 }
+            z: 1          // above the row's MouseArea, so the ⋮ button gets its taps (the text lets them through)
+            anchors { fill: parent; leftMargin: 14; rightMargin: settings.round && list.compact ? 4 : 14 }
             spacing: 0
             Text {
                 visible: !list.compact
@@ -46,7 +57,7 @@ ListView {
                 visible: list.compact
                 Layout.fillWidth: true; Layout.preferredWidth: 100
                 spacing: 2
-                Text { Layout.fillWidth: true; text: row.title; elide: Text.ElideRight; font.pixelSize: 14; font.weight: Font.Medium; color: list.pri }
+                Text { Layout.fillWidth: true; text: row.title; elide: Text.ElideRight; font.pixelSize: settings.round ? 15 : 14; font.weight: settings.round ? Font.Bold : Font.Medium; color: list.pri }
                 Text { Layout.fillWidth: true; text: row.artist; elide: Text.ElideRight; font.pixelSize: 12; color: list.muted }
             }
             Item {
@@ -62,7 +73,13 @@ ListView {
                 Layout.preferredWidth: 28; Layout.preferredHeight: 20
                 Icon { visible: row.remote; anchors.centerIn: parent; name: "cloud"; size: 14; color: list.muted }
             }
-            Text { Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; text: row.duration; font.pixelSize: 14; color: list.muted }
+            Text { visible: !(settings.round && list.compact); Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; text: row.duration; font.pixelSize: 14; color: list.muted }
+            IconButton {      // Midnight, phone: the song's menu (add to a playlist…), as well as a long press
+                visible: settings.round && list.compact
+                z: 2
+                name: "more"; box: 40; iconSize: 20
+                onClicked: { const p = mapToItem(null, width / 2, height / 2); list.menuRequested(row.path, p.x, p.y) }
+            }
         }
         MouseArea {
             id: ma

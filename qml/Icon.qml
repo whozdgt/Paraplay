@@ -6,7 +6,7 @@ Item {
     property string name
     property color color: "black"
     property real size: 22
-    readonly property bool filled: name === "play" || name === "pause" || name === "more" || name === "ff" || name === "homefill" || name === "heart"
+    readonly property bool filled: name === "play" || name === "pause" || name === "more" || name === "ff" || name === "rw" || name === "homefill" || name === "heart"
     readonly property var paths: ({
         prev: "M19 20 9 12l10-8zM5 5v14",
         next: "M5 4l10 8-10 8zM19 5v14",
@@ -35,6 +35,7 @@ Item {
         friends: "M12.5 8a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0zM2.5 20a6.5 6.5 0 0 1 13 0M19.5 9a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0zM16.5 14a5 5 0 0 1 5 5",
         more: "M10.2 5a1.8 1.8 0 1 0 3.6 0 1.8 1.8 0 0 0-3.6 0zM10.2 12a1.8 1.8 0 1 0 3.6 0 1.8 1.8 0 0 0-3.6 0zM10.2 19a1.8 1.8 0 1 0 3.6 0 1.8 1.8 0 0 0-3.6 0z",
         ff: "M3 5.5v13l8.5-6.5zM12 5.5v13l8.5-6.5z",
+        rw: "M21 5.5v13L12.5 12zM12 5.5v13L3.5 12z",
         heart: "M12 20s-7.5-4.5-7.5-10.2A4.2 4.2 0 0 1 12 7.2a4.2 4.2 0 0 1 7.5 2.6C19.5 15.5 12 20 12 20z",
         song: "M9 18V5l11-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z",
         album: "M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0zM14.5 12a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z",

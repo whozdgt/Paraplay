@@ -37,15 +37,24 @@ ColumnLayout {
         Layout.bottomMargin: 6
         elide: Text.ElideRight
         text: (root.searching && root.section !== "" ? root.section + " › " : "") + root.title.toUpperCase()
-        font.pixelSize: 11
+        leftPadding: settings.round ? 16 : 0
+        font.pixelSize: settings.round ? 12 : 11
+        font.weight: settings.round ? Font.Bold : Font.Normal
         font.letterSpacing: 1
-        color: Qt.rgba(settings.ink.r, settings.ink.g, settings.ink.b, 0.72)
+        color: settings.round ? settings.inkSoft : Qt.rgba(settings.ink.r, settings.ink.g, settings.ink.b, 0.72)
     }
-    ColumnLayout {
-        id: body
+    Item {      // Midnight: the rows sit on a softly tinted card
         Layout.fillWidth: true
-        spacing: 0
-        readonly property bool isSetBody: true          // tells the rows inside that they are in a group
-        readonly property bool groupHit: root.groupHit
+        implicitHeight: body.implicitHeight + (settings.round ? 8 : 0)
+        Rectangle { anchors.fill: parent; visible: settings.round; radius: 18; color: settings.cardFill }
+        ColumnLayout {
+            id: body
+            x: settings.round ? 16 : 0
+            y: settings.round ? 4 : 0
+            width: parent.width - 2 * x
+            spacing: 0
+            readonly property bool isSetBody: true          // tells the rows inside that they are in a group
+            readonly property bool groupHit: root.groupHit
+        }
     }
 }

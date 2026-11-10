@@ -33,9 +33,68 @@ Flickable {
         width: root.width - 2 * root.gutter
         spacing: root.compact ? 22 : 30
 
+        // ---- Midnight: a big "Home", a greeting, and where the music comes from ----
+        Column {
+            visible: settings.round
+            width: parent.width
+            spacing: 2
+            Text {
+                height: 44
+                verticalAlignment: Text.AlignVCenter
+                text: "Home"
+                font.pixelSize: root.compact ? 32 : 40
+                font.weight: Font.Black
+                font.letterSpacing: -1
+                color: root.pri
+            }
+            Text {
+                width: parent.width
+                elide: Text.ElideRight
+                text: (root.hour < 12 ? "Good morning" : root.hour < 18 ? "Good afternoon" : "Good evening")
+                      + (account.signedIn ? ", " + (account.displayName || account.username) : "")
+                font.pixelSize: 13
+                color: settings.inkSoft
+            }
+            Flow {
+                visible: servers.count > 0          // with only this device's music there is nothing to choose between
+                width: parent.width
+                topPadding: 14
+                spacing: 8
+                Repeater {
+                    model: {
+                        servers.revision
+                        return [{ id: "", name: "All" }, { id: "local", name: settings.mobile ? "This phone" : "This computer" }]
+                            .concat(servers.list().filter(function(x) { return x.enabled }))
+                    }
+                    Rectangle {
+                        id: srcPill
+                        required property var modelData
+                        readonly property bool on: library.source === modelData.id
+                        width: pillText.implicitWidth + 32; height: 36
+                        radius: 18
+                        color: on ? settings.ink : settings.chipFill
+                        Accessible.role: Accessible.RadioButton
+                        Accessible.name: modelData.name
+                        Accessible.checked: on
+                        Accessible.onPressAction: library.source = modelData.id
+                        Text {
+                            id: pillText
+                            anchors.centerIn: parent
+                            text: srcPill.modelData.name
+                            font.pixelSize: 14
+                            font.weight: srcPill.on ? Font.Bold : Font.Normal
+                            color: srcPill.on ? settings.onInk : settings.ink
+                        }
+                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: library.source = srcPill.modelData.id }
+                    }
+                }
+            }
+        }
+
         // ---- who you are ----
         Row {
             id: head
+            visible: !settings.round
             width: parent.width
             spacing: root.compact ? 16 : 22
             readonly property int pic: root.compact ? 72 : 104

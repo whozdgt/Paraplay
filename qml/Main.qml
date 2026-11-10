@@ -119,6 +119,7 @@ Window {
         if (k === "search") { navigate("songs"); searchOpen = true; return }
         navigate(k)
     }
+    readonly property bool albumHeader: settings.round && view === "songs" && library.filterKind !== ""     // Midnight's album/artist/playlist page
     readonly property real dockSpace: phone && !expanded ? dock.height + 26 : 0
     function openUser(name) {
         searchOpen = false
@@ -235,11 +236,10 @@ Window {
                 id: side
                 z: 35
                 drawer: false
-                width: 230
-                x: 0
+                width: settings.round ? 224 : 230
+                x: settings.round ? 12 : 0
                 visible: !win.phone             // phones use the tabs along the bottom
-                Behavior on x { enabled: win.phone; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                anchors { top: parent.top; bottom: parent.bottom }
+                anchors { top: parent.top; bottom: parent.bottom; topMargin: settings.round ? 12 : 0; bottomMargin: settings.round ? 12 : 0 }
                 view: win.view
                 onSelect: (v) => win.navigate(v)
                 onProfileClicked: { win.drawerOpen = false; if (account.signedIn) win.navigate("profile"); else win.authOpen = true }
@@ -253,7 +253,7 @@ Window {
             }
 
             Item {
-                anchors { left: win.phone ? parent.left : side.right; right: parent.right; top: parent.top; bottom: win.phone ? parent.bottom : bar.top; bottomMargin: win.phone ? 0 : 12 }
+                anchors { left: win.phone ? parent.left : side.right; leftMargin: !win.phone && settings.round ? 8 : 0; right: parent.right; top: parent.top; bottom: win.phone ? parent.bottom : bar.top; bottomMargin: win.phone ? 0 : 12 }
 
                 Text {
                     id: title
@@ -263,7 +263,7 @@ Window {
                     y: win.phone ? 10 : 26
                     height: win.phone ? 44 : implicitHeight
                     verticalAlignment: Text.AlignVCenter
-                        visible: win.view !== "home"
+                        visible: win.view !== "home" && !win.albumHeader
                         text: win.view === "friends" ? (win.phone ? "Friends" : "‹ Friends")
                             : win.view === "user" ? "‹ " + (social.profile.name || social.profile.username || "Profile")
                             : win.view === "friendpl" ? "‹ " + (social.playlist.name || "Playlist")
@@ -357,7 +357,7 @@ Window {
                                 color: sel ? win.pri : "transparent"
                                 border.width: 1
                                 border.color: win.pri
-                                Text { anchors.centerIn: parent; text: parent.modelData.t; font.pixelSize: 13; color: parent.sel ? "white" : win.pri }
+                                Text { anchors.centerIn: parent; text: parent.modelData.t; font.pixelSize: 13; color: parent.sel ? settings.onInk : win.pri }
                                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: win.profileMode = parent.modelData.k }
                             }
                         }
@@ -424,7 +424,7 @@ Window {
                     bottomMargin: win.dockSpace
                     onContentYChanged: win.noteScroll(contentY)
                     gutter: win.gutter
-                    anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: win.phone ? 56 : 18 }
+                    anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; topMargin: settings.round ? 4 : (win.phone ? 56 : 18) }
                     onOpenUser: (username) => win.openUser(username)
                     onOpenArtist: (name) => win.pick("artist", name, name, "home")
                     onOpenAlbum: (key, name) => win.pick("album", key, name, "home")
@@ -683,6 +683,17 @@ Window {
             }
         }
 
+        IconButton {      // Midnight: back from an album, artist or playlist page (its header shows the name)
+            z: 10
+            visible: win.albumHeader && !win.expanded && !win.settingsOpen && !win.searchOpen
+            x: (win.phone ? 0 : side.width) + win.gutter - 2
+            y: win.phone ? 10 : 18
+            filled: true
+            name: "back"; box: 44; iconSize: 22
+            Accessible.name: "Back"
+            onClicked: win.navigate(win.backView || (win.phone ? "library" : "songs"))
+        }
+
         IconButton {      // phone: closes the search box
             z: 41
             visible: win.phone && win.searchOpen && !win.expanded
@@ -701,6 +712,22 @@ Window {
                 if (win.view === "home") { win.navigate("songs"); win.searchOpen = true }      // the home page has nothing to search: use the song list
                 else win.searchOpen = !win.searchOpen
             }
+        }
+
+        Item {      // Midnight, Home: your picture, beside the round buttons (opens your profile, or signing in)
+            z: 10
+            visible: settings.round && win.view === "home" && !win.expanded && !win.settingsOpen && !(win.phone && win.searchOpen)
+            width: 44; height: 44
+            anchors {
+                right: parent.right
+                rightMargin: win.phone ? (account.signedIn ? 116 : 64) : (account.signedIn ? 188 : 132)      // left of Find people and Settings (and Search on a computer)
+                top: parent.top; topMargin: win.phone ? 10 : 18
+            }
+            Accessible.role: Accessible.Button
+            Accessible.name: account.signedIn ? "Your profile" : "Sign in"
+            Accessible.onPressAction: { if (account.signedIn) win.navigate("profile"); else win.authOpen = true }
+            Avatar { anchors.fill: parent; source: account.signedIn ? account.avatarUrl : "" }
+            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { if (account.signedIn) win.navigate("profile"); else win.authOpen = true } }
         }
 
         IconButton {      // Home: find people to follow

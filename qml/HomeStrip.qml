@@ -8,7 +8,10 @@ Item {
     property bool compact: false
     signal picked(string key, string name)
     signal seeAll()
-    readonly property int tile: compact ? 124 : 156
+    // Midnight shows albums as big cards with the name over the picture, and everything else as bigger squares
+    readonly property bool cards: settings.round && kind === "album"
+    readonly property int tile: cards ? (compact ? 220 : 236) : settings.round ? (compact ? 150 : 170) : (compact ? 124 : 156)
+    readonly property int tileH: cards ? Math.round(tile * 1.28) : tile
     readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
     readonly property var items: {
@@ -25,7 +28,7 @@ Item {
         ListView {
             visible: root.items.length > 0
             width: parent.width
-            height: root.tile + 48
+            height: root.cards ? root.tileH : root.tile + 48
             orientation: ListView.Horizontal
             spacing: 14
             clip: true
@@ -37,13 +40,34 @@ Item {
                 width: root.tile
                 height: ListView.view.height
                 Column {
+                    visible: !root.cards
                     width: parent.width
                     spacing: 6
                     CoverTile { width: root.tile; height: root.tile; entry: cell.modelData; kind: root.kind }
                     Column {
                         width: parent.width
-                        Text { width: parent.width; text: cell.modelData.name; elide: Text.ElideRight; font.pixelSize: 13; font.weight: Font.Medium; color: root.pri }
-                        Text { width: parent.width; text: cell.modelData.sub; elide: Text.ElideRight; font.pixelSize: 11; color: root.muted }
+                        Text { width: parent.width; text: cell.modelData.name; elide: Text.ElideRight; font.pixelSize: settings.round ? 14 : 13; font.weight: settings.round ? Font.Bold : Font.Medium; color: root.pri }
+                        Text { width: parent.width; text: cell.modelData.sub; elide: Text.ElideRight; font.pixelSize: settings.round ? 13 : 11; color: settings.round ? settings.inkSoft : root.muted }
+                    }
+                }
+                Item {      // Midnight: a big card, the name over the bottom of the picture
+                    visible: root.cards
+                    width: root.tile; height: root.tileH
+                    CoverTile { anchors.fill: parent; entry: cell.modelData; kind: root.kind }
+                    Rectangle {
+                        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                        height: parent.height * 0.5
+                        radius: settings.round ? 18 : 0
+                        gradient: Gradient {
+                            GradientStop { position: 0; color: Qt.rgba(0, 0, 0, 0) }
+                            GradientStop { position: 1; color: Qt.rgba(0, 0, 0, 0.8) }
+                        }
+                    }
+                    Column {
+                        anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 16 }
+                        spacing: 2
+                        Text { width: parent.width; text: cell.modelData.name; elide: Text.ElideRight; font.pixelSize: 17; font.weight: Font.Black; color: "white" }
+                        Text { width: parent.width; text: cell.modelData.sub; elide: Text.ElideRight; font.pixelSize: 13; color: Qt.rgba(1, 1, 1, 0.82) }
                     }
                 }
                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.picked(cell.modelData.key, cell.modelData.name) }

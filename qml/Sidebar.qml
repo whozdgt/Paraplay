@@ -13,8 +13,11 @@ Rectangle {
     readonly property color pri: settings.ink
     readonly property bool hasServers: servers.count > 0
 
-    color: drawer ? settings.ground : Qt.rgba(1, 1, 1, 0.28)
-    Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Qt.rgba(1, 1, 1, 0.55) }
+    color: settings.round ? Qt.rgba(0.11, 0.11, 0.12, 0.85) : drawer ? settings.ground : Qt.rgba(1, 1, 1, 0.28)
+    radius: settings.round ? 22 : 0            // Midnight: a rounded panel standing a little off the edges
+    border.width: settings.round ? 1 : 0
+    border.color: Qt.rgba(1, 1, 1, 0.08)
+    Rectangle { visible: !settings.round; anchors.right: parent.right; width: 1; height: parent.height; color: Qt.rgba(1, 1, 1, 0.55) }
 
     Flickable {
         id: flick

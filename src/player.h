@@ -85,6 +85,7 @@ public:
     Q_INVOKABLE void setSpeed(double s);                // 0.5 to 2; the pitch follows, like a record
 
     Q_INVOKABLE void playRow(int viewRow);
+    Q_INVOKABLE void playShuffled();                    // every song in the list on screen, in a random order
     Q_INVOKABLE void toggle();
     Q_INVOKABLE void next();
     Q_INVOKABLE void prev();

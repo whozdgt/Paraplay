@@ -12,15 +12,18 @@ Rectangle {
     readonly property color pri: settings.ink
 
     height: sub ? 36 : 40
-    color: active ? (settings.solid ? settings.hiSel : Qt.rgba(1, 1, 1, 0.65)) : (ma.containsMouse && !dim ? (settings.solid ? settings.hiHover : Qt.rgba(1, 1, 1, 0.3)) : "transparent")
+    radius: settings.round ? height / 2 : 0
+    color: active && settings.round ? Qt.rgba(1, 1, 1, 0.12) : active ? (settings.solid ? settings.hiSel : Qt.rgba(1, 1, 1, 0.65)) : (ma.containsMouse && !dim ? (settings.solid ? settings.hiHover : Qt.rgba(1, 1, 1, 0.3)) : "transparent")
 
-    Rectangle { visible: root.active; width: 3; height: parent.height; color: settings.accent }
+    Rectangle { visible: root.active && !settings.round; width: 3; height: parent.height; color: settings.accent }
     Text {
         anchors { left: parent.left; leftMargin: root.sub ? 28 : 12; right: parent.right; rightMargin: 36; verticalCenter: parent.verticalCenter }
         text: root.text
         elide: Text.ElideRight
         font.pixelSize: root.sub ? 13 : 14
-        color: root.active ? root.pri : Qt.rgba(root.pri.r, root.pri.g, root.pri.b, root.dim ? 0.5 : 0.78)
+        font.weight: settings.round && root.active ? Font.Bold : Font.Normal
+        color: root.active || settings.round ? root.pri : Qt.rgba(root.pri.r, root.pri.g, root.pri.b, root.dim ? 0.5 : 0.78)
+        opacity: settings.round && root.dim ? 0.5 : 1
     }
     Icon {
         visible: root.chevron

@@ -54,17 +54,20 @@ SettingItem {
         Row { id: acc; visible: children.length > 0; Layout.alignment: Qt.AlignVCenter; spacing: 0 }
         Rectangle {
             Layout.alignment: Qt.AlignVCenter
-            Layout.preferredWidth: 44
-            Layout.preferredHeight: 24
-            color: root.checked ? settings.accent : "transparent"
-            border.width: 2
+            Layout.preferredWidth: settings.round ? 50 : 44
+            Layout.preferredHeight: settings.round ? 30 : 24
+            radius: settings.round ? height / 2 : 0
+            color: root.checked ? settings.accent : (settings.round ? Qt.rgba(0.22, 0.22, 0.24, 1) : "transparent")
+            border.width: settings.round ? 0 : 2
             border.color: root.checked ? settings.accent : Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.5)
             Behavior on color { ColorAnimation { duration: 200 } }
             Behavior on border.color { ColorAnimation { duration: 200 } }
             Rectangle {
-                y: 4; width: 16; height: 16
-                x: root.checked ? 24 : 4
-                color: root.checked ? "white" : Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.5)
+                y: settings.round ? 3 : 4
+                width: settings.round ? 24 : 16; height: width
+                radius: settings.round ? width / 2 : 0
+                x: root.checked ? parent.width - width - (settings.round ? 3 : 4) : (settings.round ? 3 : 4)
+                color: root.checked || settings.round ? "white" : Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.5)
                 Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.BezierSpline; easing.bezierCurve: [0.2, 0, 0, 1, 1, 1] } }
                 Behavior on color { ColorAnimation { duration: 200 } }
             }

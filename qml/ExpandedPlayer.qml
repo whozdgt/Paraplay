@@ -16,6 +16,7 @@ Item {
 
     IconButton {
         anchors { left: parent.left; leftMargin: 20; top: parent.top; topMargin: 18 }
+        filled: true
         name: "down"; box: 44; iconSize: 22
         onClicked: root.collapse()
     }
@@ -29,7 +30,7 @@ Item {
         Cover {
             visible: !root.lyricsMode
             Layout.alignment: Qt.AlignHCenter
-            Layout.preferredWidth: Math.max(140, Math.min(300, root.height - 340 - root.extra, root.availW - 64))
+            Layout.preferredWidth: Math.max(140, Math.min(settings.round ? 360 : 300, root.height - 340 - root.extra, root.availW - 64))
             Layout.preferredHeight: Layout.preferredWidth
             source: player.coverSource
             record: settings.recordCover
@@ -48,16 +49,17 @@ Item {
         ColumnLayout {
             Layout.alignment: Qt.AlignHCenter
             spacing: 6
-            Text { Layout.alignment: Qt.AlignHCenter; Layout.maximumWidth: root.availW - 40; elide: Text.ElideRight; text: player.hasTrack ? player.title : "Nothing playing"; font.pixelSize: root.phone ? 22 : 26; font.weight: Font.DemiBold; color: root.pri }
-            Text { Layout.alignment: Qt.AlignHCenter; Layout.maximumWidth: root.availW - 40; elide: Text.ElideRight; text: player.artist; font.pixelSize: 15; color: root.muted }
+            Text { Layout.alignment: Qt.AlignHCenter; Layout.maximumWidth: root.availW - 40; elide: Text.ElideRight; text: player.hasTrack ? player.title : "Nothing playing"; font.pixelSize: root.phone ? 22 : 26; font.weight: settings.round ? Font.Black : Font.DemiBold; color: root.pri }
+            Text { Layout.alignment: Qt.AlignHCenter; Layout.maximumWidth: root.availW - 40; elide: Text.ElideRight; text: player.artist; font.pixelSize: 15; color: settings.round ? settings.inkSoft : root.muted }
             Rectangle {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.topMargin: 6
                 visible: settings.badges && player.hasTrack
                 implicitWidth: chip.implicitWidth + 24
-                implicitHeight: chip.implicitHeight + 10
-                color: root.boxBg
-                Rectangle { width: 3; height: parent.height; color: settings.accent }
+                implicitHeight: chip.implicitHeight + (settings.round ? 14 : 10)
+                radius: settings.round ? height / 2 : 0
+                color: settings.round ? settings.chipFill : root.boxBg
+                Rectangle { visible: !settings.round; width: 3; height: parent.height; color: settings.accent }
                 Text {
                     id: chip
                     anchors.centerIn: parent
@@ -71,24 +73,25 @@ Item {
         Row {
             Layout.alignment: Qt.AlignHCenter
             spacing: 28
-            IconButton { name: "prev"; box: 44; iconSize: 22; onClicked: player.prev() }
-            IconButton { name: player.playing ? "pause" : "play"; box: 64; iconSize: 26; bg: root.pri; fg: "white"; onClicked: player.toggle() }
-            IconButton { name: "next"; box: 44; iconSize: 22; onClicked: player.next() }
+            IconButton { anchors.verticalCenter: parent.verticalCenter; name: settings.round ? "rw" : "prev"; box: settings.round ? 56 : 44; iconSize: settings.round ? 32 : 22; onClicked: player.prev() }
+            IconButton { anchors.verticalCenter: parent.verticalCenter; name: player.playing ? "pause" : "play"; box: settings.round ? 80 : 64; iconSize: settings.round ? 30 : 26; bg: root.pri; fg: settings.onInk; onClicked: player.toggle() }
+            IconButton { anchors.verticalCenter: parent.verticalCenter; name: settings.round ? "ff" : "next"; box: settings.round ? 56 : 44; iconSize: settings.round ? 32 : 22; onClicked: player.next() }
         }
         Rectangle {
             visible: root.lyricsButton
             Layout.alignment: Qt.AlignHCenter
             Layout.preferredWidth: Math.max(168, btnRow.implicitWidth + 40)
-            Layout.preferredHeight: 40
-            color: root.lyricsMode ? root.pri : "transparent"
-            border.width: 1
+            Layout.preferredHeight: settings.round ? 44 : 40
+            radius: settings.round ? height / 2 : 0
+            color: root.lyricsMode ? root.pri : (settings.round ? settings.glass : "transparent")
+            border.width: settings.round ? 0 : 1
             border.color: root.pri
             Row {
                 id: btnRow
                 anchors.centerIn: parent
                 spacing: 10
-                Icon { anchors.verticalCenter: parent.verticalCenter; name: "lyrics"; size: 18; color: root.lyricsMode ? "white" : root.pri }
-                Text { anchors.verticalCenter: parent.verticalCenter; text: "Lyrics"; font.pixelSize: 14; color: root.lyricsMode ? "white" : root.pri }
+                Icon { anchors.verticalCenter: parent.verticalCenter; name: "lyrics"; size: 18; color: root.lyricsMode ? settings.onInk : root.pri }
+                Text { anchors.verticalCenter: parent.verticalCenter; text: "Lyrics"; font.pixelSize: 14; font.weight: settings.round ? Font.Bold : Font.Normal; color: root.lyricsMode ? settings.onInk : root.pri }
             }
             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.lyricsOpen = !root.lyricsOpen }
         }

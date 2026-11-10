@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write      # to publish the interface screenshots as a pre-release
 
 jobs:
   linux:
@@ -80,4 +80,20 @@ jobs:
           path: shots/
           retention-days: 7
           if-no-files-found: ignore
+
+      # The same pictures as a rolling pre-release, "ui-screenshots", so they can be fetched without signing in.
+      - name: Publish the screenshots
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pm="pacman"
+          pacman --help 2>&1 | grep -q -- --disable-sandbox && pm="pacman --disable-sandbox"
+          $pm -S --noconfirm --needed github-cli zip > /dev/null
+          ls shots/*.png > /dev/null 2>&1 || { echo "no screenshots"; exit 0; }
+          (cd shots && zip -q ../screenshots.zip ./*.png ./*.log)
+          gh release delete ui-screenshots --cleanup-tag --yes -R "$GITHUB_REPOSITORY" || true
+          gh release create ui-screenshots screenshots.zip -R "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" \
+            --title "Interface screenshots (made by CI)" --notes "Pictures of the interface for ${GITHUB_SHA}. Not a release."
 

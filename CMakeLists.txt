@@ -72,7 +72,7 @@ qt_add_qml_module(musicplayer
   VERSION 1.0
   QML_FILES
     qml/Main.qml qml/Icon.qml qml/IconButton.qml qml/Cover.qml qml/Progress.qml
-    qml/QualityChip.qml qml/NavItem.qml qml/Sidebar.qml qml/SongList.qml qml/RoundImage.qml qml/Dock.qml qml/LibraryPage.qml
+    qml/QualityChip.qml qml/NavItem.qml qml/Sidebar.qml qml/SongList.qml qml/RoundImage.qml qml/Dock.qml qml/LibraryPage.qml qml/AlbumHeader.qml
     qml/Groups.qml qml/Carousel.qml qml/PlayerBar.qml qml/ExpandedPlayer.qml qml/SettingsPanel.qml
     qml/SectionLabel.qml qml/ToggleRow.qml qml/Slider255.qml qml/ColorEditor.qml
     qml/SettingItem.qml qml/SetGroup.qml qml/SetBlock.qml qml/SetAccordion.qml qml/SetSlider.qml qml/SliderRow.qml

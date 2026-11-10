@@ -1,5 +1,8 @@
 #include "player.h"
 
+#include <algorithm>
+#include <random>
+
 #include <QCoreApplication>
 #include <QDebug>
 #include <QFile>
@@ -272,6 +275,16 @@ void Player::playRow(int viewRow)
     m_tracks = s.tracks;
     m_order = s.order;
     startAt(viewRow);
+}
+
+void Player::playShuffled()
+{
+    const Library::Snapshot s = m_lib->snapshot();
+    if (s.order.isEmpty()) return;
+    m_tracks = s.tracks;
+    m_order = s.order;
+    std::shuffle(m_order.begin(), m_order.end(), std::mt19937(std::random_device{}()));
+    startAt(0);
 }
 
 #ifdef HAVE_MPV
