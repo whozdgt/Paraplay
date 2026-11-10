@@ -23,7 +23,9 @@ env:
 
 jobs:
   ios:
-    runs-on: macos-15
+    # Intel Macs: GitHub keeps turning iOS jobs away on its busier Apple-silicon Macs ("not acquired by Runner").
+    # The app is still built for iPhones (arm64); only the build machine changes.
+    runs-on: macos-15-intel
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
