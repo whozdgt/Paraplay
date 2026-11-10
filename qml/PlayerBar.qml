@@ -14,6 +14,11 @@ Rectangle {
     border.width: 1
     border.color: settings.glassLine
 
+    MouseArea {      // tap anywhere on the bar (not a button) to open the player
+        anchors.fill: parent
+        onClicked: root.expand()
+    }
+
     RowLayout {
         anchors { fill: parent; leftMargin: settings.round ? 12 : 10; rightMargin: settings.round ? 14 : 10 }
         spacing: 14
