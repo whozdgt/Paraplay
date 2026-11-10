@@ -64,7 +64,7 @@ Item {
         opacity: 0
         scale: 0.6
 
-        Rectangle { anchors.fill: parent; color: settings.bgColor; opacity: 0.94 }
+        Rectangle { anchors.fill: parent; color: settings.ground; opacity: 0.94 }
         Rectangle { width: 4; height: parent.height; color: settings.accent }
         Column {
             anchors.centerIn: parent
@@ -77,7 +77,7 @@ Item {
                 text: "Heya " + root.name + "!"
                 font.pixelSize: card.phone ? 30 : 40
                 font.weight: Font.DemiBold
-                color: settings.primary
+                color: settings.ink
             }
             Text {
                 id: sub
@@ -85,7 +85,7 @@ Item {
                 horizontalAlignment: Text.AlignHCenter
                 text: "Your account is ready."
                 font.pixelSize: 14
-                color: Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.72)
+                color: Qt.rgba(settings.ink.r, settings.ink.g, settings.ink.b, 0.72)
             }
         }
 

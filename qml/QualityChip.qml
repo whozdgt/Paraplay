@@ -4,11 +4,16 @@ Item {
     id: root
     property string line1
     property string line2
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     width: 104
-    height: col.implicitHeight + 4
+    height: col.implicitHeight + (settings.round ? 10 : 4)
 
-    Rectangle { width: 3; height: parent.height; color: settings.accent }
+    Rectangle {      // Classic: a stripe of accent; Midnight: a soft pill
+        width: settings.round ? parent.width : 3
+        height: parent.height
+        radius: settings.round ? 12 : 0
+        color: settings.round ? settings.chipFill : settings.accent
+    }
     Column {
         id: col
         x: 11

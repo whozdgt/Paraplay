@@ -6,7 +6,7 @@ Item {
     property int maxValue: 255
     signal moved(int v)
     height: 20
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
 
     Rectangle {
         anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter }

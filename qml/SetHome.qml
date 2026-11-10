@@ -6,7 +6,7 @@ ColumnLayout {
     id: root
     property var panel
     readonly property var lay: panel ? panel.layout : null
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
 
     spacing: 0

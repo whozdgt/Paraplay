@@ -5,7 +5,7 @@ Rectangle {
     id: root
     property string hex
     signal picked(string hex)
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property bool valid: /^#[0-9a-fA-F]{6}$/.test(input.text)
 
     implicitWidth: 120

@@ -7,7 +7,7 @@ Rectangle {
     property string icon
     property bool active: false
     signal clicked()
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
 
     height: 44
     Accessible.role: Accessible.PageTab

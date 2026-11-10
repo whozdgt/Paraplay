@@ -10,7 +10,7 @@ Item {
     property bool arrowOpen: false
     default property alias extra: right.data
     signal activated()
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
 
     height: 44
@@ -30,7 +30,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             width: Math.max(18, cnt.implicitWidth + 10); height: 18
             color: settings.accent
-            Text { id: cnt; anchors.centerIn: parent; text: root.count; font.pixelSize: 11; color: "white" }
+            Text { id: cnt; anchors.centerIn: parent; text: root.count; font.pixelSize: 11; color: settings.onInk }
         }
     }
     Row {

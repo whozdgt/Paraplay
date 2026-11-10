@@ -10,7 +10,7 @@ Flickable {
     contentHeight: col.implicitHeight + 40
     clip: true
     boundsBehavior: Flickable.StopAtBounds
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
     readonly property string who: account.username
     property string vis: "private"
@@ -96,7 +96,7 @@ Flickable {
                     Rectangle {
                         anchors { right: parent.right; bottom: parent.bottom; margins: 10 }
                         width: bannerBtn.implicitWidth + 28; height: 32
-                        color: Qt.rgba(1, 1, 1, 0.88)
+                        color: settings.round ? settings.surface : Qt.rgba(1, 1, 1, 0.88); radius: settings.round ? height / 2 : 0
                         Row {
                             id: bannerBtn
                             anchors.centerIn: parent

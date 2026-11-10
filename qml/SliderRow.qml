@@ -13,7 +13,7 @@ SettingItem {
     readonly property bool pressed: slider.pressed
     signal moved(int v)
     signal committed(int v)
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
 
     implicitHeight: col.implicitHeight + 20

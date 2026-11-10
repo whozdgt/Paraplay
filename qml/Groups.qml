@@ -9,7 +9,7 @@ GridView {
     signal picked(string key, string name)
     clip: true
     boundsBehavior: Flickable.StopAtBounds
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property var items: {
         if (!active) return []
         if (kind === "playlist") { playlists.revision; return playlists.list() }

@@ -8,9 +8,10 @@ Rectangle {
     signal clicked()
     implicitWidth: lbl.implicitWidth + 36
     implicitHeight: large ? (settings.mobile ? 48 : 44) : 40
-    color: primary ? settings.primary : "transparent"
-    border.width: primary ? 0 : 1
-    border.color: settings.primary
+    radius: settings.round ? height / 2 : 0           // Midnight: a pill
+    color: primary ? settings.ink : (settings.round ? settings.roundButton : "transparent")
+    border.width: primary || settings.round ? 0 : 1
+    border.color: settings.ink
     opacity: enabled ? 1 : 0.5
     Accessible.role: Accessible.Button
     Accessible.name: label
@@ -18,10 +19,11 @@ Rectangle {
 
     Rectangle {      // a little lighter or darker while the pointer is over it, and more while it is pressed
         anchors.fill: parent
-        color: root.primary ? "white" : settings.primary
+        radius: root.radius
+        color: root.primary ? "white" : settings.ink
         opacity: ma.pressed ? 0.22 : (ma.containsMouse ? 0.10 : 0)
         Behavior on opacity { NumberAnimation { duration: 120 } }
     }
-    Text { id: lbl; anchors.centerIn: parent; text: root.label; font.pixelSize: 14; color: root.primary ? "white" : settings.primary }
+    Text { id: lbl; anchors.centerIn: parent; text: root.label; font.pixelSize: 14; font.weight: settings.round ? Font.DemiBold : Font.Normal; color: root.primary ? settings.onInk : settings.ink }
     MouseArea { id: ma; anchors.fill: parent; enabled: root.enabled; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.clicked() }
 }

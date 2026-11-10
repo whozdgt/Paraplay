@@ -3,7 +3,7 @@ import QtQuick
 // The "Search settings" box. What is typed lives in settings.settingsQuery, which every row in Settings reads.
 Rectangle {
     id: root
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
 
     implicitHeight: settings.mobile ? 48 : 40
     color: settings.solid ? settings.boxFill : Qt.rgba(1, 1, 1, 0.6)

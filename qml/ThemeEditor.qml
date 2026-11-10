@@ -35,8 +35,9 @@ ColumnLayout {
         settings.boxOpacity = 5
     }
 
-    SectionLabel { text: "PREVIEW"; topPadding: 4 }
+    SectionLabel { visible: !settings.round; text: "PREVIEW"; topPadding: 4 }
     Rectangle {
+        visible: !settings.round            // Midnight: the whole app is the preview
         Layout.fillWidth: true
         Layout.preferredHeight: 156
         clip: true
@@ -94,7 +95,14 @@ ColumnLayout {
         }
     }
 
-    SectionLabel { text: "ACCENT COLOUR"; topPadding: 18 }
+    SectionLabel { text: "ACCENT COLOUR"; topPadding: settings.round ? 4 : 18 }
+    Text {
+        visible: settings.round
+        Layout.fillWidth: true
+        Layout.bottomMargin: 6
+        wrapMode: Text.Wrap; font.pixelSize: 12; lineHeight: 1.3; color: root.muted
+        text: "On Midnight the accent colours everything: titles, songs, icons and buttons."
+    }
     Flow {
         Layout.fillWidth: true
         spacing: 4
@@ -116,9 +124,9 @@ ColumnLayout {
         HexField { hex: root.accentC.toString(); onPicked: (h) => settings.accent = Qt.color(h) }
     }
 
-    SectionLabel { visible: settings.solid; text: "BACKGROUND"; topPadding: 18 }
+    SectionLabel { visible: settings.solid && !settings.round; text: "BACKGROUND"; topPadding: 18 }
     Flow {
-        visible: settings.solid
+        visible: settings.solid && !settings.round
         Layout.fillWidth: true
         spacing: 4
         Repeater {
@@ -133,16 +141,16 @@ ColumnLayout {
         }
     }
     RowLayout {
-        visible: settings.solid
+        visible: settings.solid && !settings.round
         Layout.topMargin: 8
         spacing: 12
         Text { text: "Hex"; font.pixelSize: 13; color: root.muted }
         HexField { hex: root.bgC.toString(); onPicked: (h) => settings.bgColor = Qt.color(h) }
     }
 
-    SectionLabel { visible: settings.solid; text: "SELECTION AND BOXES"; topPadding: 18 }
+    SectionLabel { visible: settings.solid && !settings.round; text: "SELECTION AND BOXES"; topPadding: 18 }
     SliderRow {
-        available: settings.solid
+        available: settings.solid && !settings.round
         label: "Selection strength"
         note: "The colour behind what is playing and the menu item you are on"
         maxValue: 50
@@ -151,7 +159,7 @@ ColumnLayout {
         onMoved: (v) => settings.highlightOpacity = v
     }
     SliderRow {
-        available: settings.solid
+        available: settings.solid && !settings.round
         label: "Boxes and fields"
         note: "Boxes like the profile fields"
         maxValue: 30
@@ -164,10 +172,10 @@ ColumnLayout {
         Layout.topMargin: 12
         label: "Colour sliders"
         note: "Fine-tune any colour with red, green and blue"
-        ColorEditor { title: "Primary"; value: root.pri; onEdited: (c) => settings.primary = c }
+        ColorEditor { visible: !settings.round; title: "Primary"; value: root.pri; onEdited: (c) => settings.primary = c }
         ColorEditor { title: "Accent"; value: root.accentC; onEdited: (c) => settings.accent = c }
-        ColorEditor { visible: settings.solid; title: Qt.platform.os === "linux" ? "Background (frosted glass off)" : "Background"; value: root.bgC; onEdited: (c) => settings.bgColor = c }
-        ColorEditor { visible: settings.solid; title: "Highlight"; value: root.hiC; onEdited: (c) => settings.highlight = c }
+        ColorEditor { visible: settings.solid && !settings.round; title: Qt.platform.os === "linux" ? "Background (frosted glass off)" : "Background"; value: root.bgC; onEdited: (c) => settings.bgColor = c }
+        ColorEditor { visible: settings.solid && !settings.round; title: "Highlight"; value: root.hiC; onEdited: (c) => settings.highlight = c }
         Item { Layout.preferredHeight: 8 }
     }
 

@@ -11,7 +11,7 @@ Item {
     readonly property bool lyricsButton: phone && settings.lyrics
     readonly property real extra: lyricsButton ? 66 : 0     // room taken by the lyrics button under the controls
     readonly property real availW: (settings.lyrics && !phone) ? width - 380 : width
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
 
     IconButton {

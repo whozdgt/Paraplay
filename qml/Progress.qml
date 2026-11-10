@@ -4,7 +4,7 @@ import QtQuick.Layouts
 RowLayout {
     id: root
     spacing: 10
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
     property real dragFrac: -1
     readonly property real frac: dragFrac >= 0 ? dragFrac

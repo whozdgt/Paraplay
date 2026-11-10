@@ -15,7 +15,7 @@ Flickable {
     signal menuRequested(string path, real gx, real gy)
     signal openProfile()
     signal signInRequested()
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
 
     property int hour: new Date().getHours()

@@ -5,7 +5,7 @@ import QtQuick.Layouts
 ColumnLayout {
     id: root
     property var panel                      // the SettingsPanel, for its signals and little helpers
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
     readonly property color boxFill: settings.solid ? settings.boxFill : Qt.rgba(1, 1, 1, 0.6)
 

@@ -7,7 +7,7 @@ Item {
     id: root
     property bool centered: false
     property real fontSize: 16
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.62)
     readonly property bool synced: player.lyricSynced
     readonly property bool android: settings.mobile

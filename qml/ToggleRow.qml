@@ -7,7 +7,7 @@ SettingItem {
     property bool checked
     signal toggled()
     default property alias accessories: acc.data         // small buttons shown beside the switch
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property real bleed: inGroup ? 12 : 0       // the hover tint reaches a little past the row
 
     implicitHeight: Math.max(inGroup ? (touch ? 60 : 52) : 44, textCol.implicitHeight + 16)

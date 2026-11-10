@@ -11,6 +11,7 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQmlPropertyMap>
+#include <QImage>
 #include <QQuickWindow>
 #include <QSettings>
 #include <QStandardPaths>
@@ -78,6 +79,15 @@ int main(int argc, char *argv[])
     cli.addVersionOption();
     QCommandLineOption dirOpt(QStringList{"m", "music"}, "Music folder to scan.", "dir");
     cli.addOption(dirOpt);
+    // For checking the interface without a screen (CI): set any setting for this run only, then save a picture of the window.
+    QCommandLineOption setOpt("set", "Use a setting for this run only (not saved), e.g. theme=classic. Repeatable.", "key=value");
+    QCommandLineOption shotOpt("screenshot", "Save a picture of the window to this file and quit.", "file");
+    QCommandLineOption sizeOpt("size", "Window size for --screenshot, e.g. 390x844.", "WxH");
+    QCommandLineOption mobileOpt("mobile", "Lay out as on a phone (touch-sized controls).");
+    cli.addOption(setOpt);
+    cli.addOption(shotOpt);
+    cli.addOption(sizeOpt);
+    cli.addOption(mobileOpt);
     cli.process(app);
 
     QSettings st;
@@ -91,6 +101,9 @@ int main(int argc, char *argv[])
     settings->insert("homeOff", st.value("homeOff", "").toString());       // sections the person switched off
     settings->insert("homeTop", st.value("homeTop", "4w").toString());     // top artists: "4w" or "all"
     settings->insert("ringCount", st.value("ringCount", 3).toInt());
+    // Settings › Look › Theme. "midnight": pure black, every word in your accent colour, rounded shapes, glass bars.
+    // "classic": your own background and text colours, square corners.
+    settings->insert("theme", st.value("theme", "midnight").toString() == QLatin1String("classic") ? QStringLiteral("classic") : QStringLiteral("midnight"));
     settings->insert("uiScale", std::clamp(st.value("uiScale", 100).toInt(), 80, 150));   // Settings › Look › Interface size, in percent
     settings->insert("settingsQuery", QString());     // what is typed in the Settings search box; only lives while the window is open
     settings->insert("volume", st.value("volume", 100).toInt());
@@ -122,29 +135,72 @@ int main(int argc, char *argv[])
         settings->insert("highlightOpacity", st.value("highlightOpacity", 12).toInt());
         settings->insert("boxOpacity", st.value("boxOpacity", 5).toInt());
     }
+    // The colours and shapes everything is drawn with. QML reads these, never the raw settings, so a theme can
+    // replace them without touching what you chose under Classic.
     const auto refreshTheme = [settings]() {
+        const bool midnight = settings->value("theme").toString() == QLatin1String("midnight");
 #if defined(Q_OS_ANDROID) || defined(Q_OS_IOS) || defined(Q_OS_WIN)
         const bool solid = true;          // phones and Windows can't blur what is behind the window
 #else
-        const bool solid = !settings->value("frosted").toBool();
+        const bool solid = midnight || !settings->value("frosted").toBool();
 #endif
-        const QColor h = settings->value("highlight").value<QColor>();
-        const auto tint = [&h](double a) { QColor c = h; c.setAlphaF(std::clamp(a, 0.0, 1.0)); return QVariant::fromValue(c); };
+        const QColor accent = settings->value("accent").value<QColor>();
+        QColor ink = settings->value("primary").value<QColor>();
+        QColor ground = settings->value("bgColor").value<QColor>();
+        QColor h = settings->value("highlight").value<QColor>();
+        if (midnight) {
+            ground = QColor(0, 0, 0);
+            ink = accent;
+            // a very dark accent would vanish on black: lift it until it reads
+            for (int i = 0; i < 8 && ink.lightnessF() < 0.45; ++i) ink = ink.lighter(125);
+            h = QColor(255, 255, 255);
+        }
+        const auto rgba = [](const QColor &c, double a) { QColor o = c; o.setAlphaF(std::clamp(a, 0.0, 1.0)); return QVariant::fromValue(o); };
+        const auto mix = [](const QColor &a, const QColor &b, double t) {
+            return QColor::fromRgbF(a.redF() * (1 - t) + b.redF() * t, a.greenF() * (1 - t) + b.greenF() * t, a.blueF() * (1 - t) + b.blueF() * t);
+        };
         const double ho = settings->value("highlightOpacity").toInt() / 100.0;
         const double bo = settings->value("boxOpacity").toInt() / 100.0;
         settings->insert("solid", solid);
-        settings->insert("hiSel", tint(ho));
-        settings->insert("hiHover", tint(ho / 2));
-        settings->insert("boxFill", tint(bo));
-        settings->insert("boxHover", tint(bo * 1.6));
-        settings->insert("boxLine", tint(std::min(0.4, bo * 3.5)));
+        settings->insert("round", midnight);
+        settings->insert("ink", QVariant::fromValue(ink));
+        settings->insert("ground", QVariant::fromValue(ground));
+        // quieter text (artists, notes): a softer shade that still reads (at least 4.5:1) rather than see-through ink
+        settings->insert("inkSoft", midnight ? QVariant::fromValue(mix(ink, QColor(128, 128, 128), 0.38)) : rgba(ink, 0.72));
+        settings->insert("onInk", QVariant::fromValue(midnight ? QColor(0, 0, 0) : QColor(255, 255, 255)));     // text on an ink-filled button
+        settings->insert("surface", midnight ? QVariant::fromValue(QColor(28, 28, 30)) : rgba(QColor(255, 255, 255), 0.95));   // menus, dialogs
+        settings->insert("field", midnight ? QVariant::fromValue(QColor(44, 44, 46)) : rgba(QColor(255, 255, 255), 0.85));     // text boxes
+        settings->insert("chipFill", midnight ? rgba(accent, 0.16) : rgba(h, std::clamp(bo * 1.6, 0.0, 1.0)));
+        settings->insert("cardFill", midnight ? rgba(accent, 0.10) : rgba(h, bo));
+        // the floating player and tab bar: frosted grey on Midnight
+        settings->insert("glass", midnight ? rgba(QColor(44, 44, 48), 0.78) : (solid ? rgba(h, std::clamp(bo * 1.6, 0.0, 1.0)) : rgba(QColor(255, 255, 255), 0.5)));
+        settings->insert("glassLine", midnight ? rgba(QColor(255, 255, 255), 0.12) : (solid ? rgba(h, std::min(0.4, bo * 3.5)) : rgba(QColor(255, 255, 255), 0.8)));
+        settings->insert("roundButton", midnight ? rgba(QColor(120, 120, 128), 0.36) : QVariant::fromValue(QColor(0, 0, 0, 0)));
+        settings->insert("hiSel", rgba(h, ho));
+        settings->insert("hiHover", rgba(h, ho / 2));
+        settings->insert("boxFill", rgba(h, bo));
+        settings->insert("boxHover", rgba(h, bo * 1.6));
+        settings->insert("boxLine", rgba(h, std::min(0.4, bo * 3.5)));
     };
+    // --set key=value and --mobile: this run only. insert() doesn't announce a change, so nothing is saved.
+    if (cli.isSet(mobileOpt)) settings->insert("mobile", true);
+    for (const QString &kv : cli.values(setOpt)) {
+        const qsizetype eq = kv.indexOf(QLatin1Char('='));
+        if (eq <= 0) continue;
+        const QString k = kv.left(eq), v = kv.mid(eq + 1);
+        bool isInt = false;
+        const int n = v.toInt(&isInt);
+        if (v == QLatin1String("true") || v == QLatin1String("false")) settings->insert(k, v == QLatin1String("true"));
+        else if (isInt) settings->insert(k, n);
+        else if (v.startsWith(QLatin1Char('#'))) settings->insert(k, QVariant::fromValue(QColor(v)));
+        else settings->insert(k, v);
+    }
     refreshTheme();
 
     // Phones show the app's background behind the status bar: its icons go dark on a light background, light on a dark one.
     const auto applyBars = [settings]() {
 #if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
-        const bool light = settings->value("bgColor").value<QColor>().lightnessF() >= 0.5;
+        const bool light = settings->value("ground").value<QColor>().lightnessF() >= 0.5;
 #if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
         QGuiApplication::styleHints()->setColorScheme(light ? Qt::ColorScheme::Light : Qt::ColorScheme::Dark);
 #endif
@@ -184,8 +240,9 @@ int main(int argc, char *argv[])
     QObject::connect(settings, &QQmlPropertyMap::valueChanged, &app, [&](const QString &k, const QVariant &v) {
         if (k == "settingsQuery") return;            // the search box is not a setting: never saved
         st.setValue(k, v.typeId() == QMetaType::QColor ? QVariant(v.value<QColor>().name()) : v);
-        if (k == "bgColor" || k == "frosted" || k == "highlight" || k == "highlightOpacity" || k == "boxOpacity") refreshTheme();
-        if (k == "bgColor") applyBars();
+        if (k == "bgColor" || k == "frosted" || k == "highlight" || k == "highlightOpacity" || k == "boxOpacity" || k == "theme"
+            || k == "accent" || k == "primary") refreshTheme();
+        if (k == "bgColor" || k == "theme") applyBars();
         if (k == "bitPerfect") player.setBitPerfect(v.toBool());
         if (k == "musicDir") library.scan(v.toString());
         if (k == "volume") player.setVolume(v.toInt());
@@ -213,7 +270,18 @@ int main(int argc, char *argv[])
     ctx->setContextProperty("safeArea", &safeArea);
     engine.loadFromModule("Music", "Main");
     if (engine.rootObjects().isEmpty()) return 1;
-    safeArea.watch(qobject_cast<QWindow *>(engine.rootObjects().first()));
+    auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
+    safeArea.watch(window);
+    if (cli.isSet(shotOpt) && window) {
+        const QStringList wh = cli.value(sizeOpt).split(QLatin1Char('x'));
+        if (wh.size() == 2) window->resize(wh[0].toInt(), wh[1].toInt());
+        const QString file = cli.value(shotOpt);
+        QTimer::singleShot(3500, &app, [window, file]() {
+            const QImage img = window->grabWindow();
+            if (!img.save(file)) qWarning("screenshot: couldn't save %s", qPrintable(file));
+            QCoreApplication::quit();
+        });
+    }
     applyBars();
 
 #ifdef HAVE_MPRIS

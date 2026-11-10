@@ -7,7 +7,7 @@ ColumnLayout {
     property string title
     property color value
     signal edited(color c)
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
     readonly property var channels: [{ n: "R", c: "#dc2626" }, { n: "G", c: "#16a34a" }, { n: "B", c: "#2563eb" }]
 

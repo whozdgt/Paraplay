@@ -9,7 +9,7 @@ Item {
     signal picked(string key, string name)
     signal seeAll()
     readonly property int tile: compact ? 124 : 156
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
     readonly property var items: {
         if (kind === "playlist") { playlists.revision; return playlists.list() }

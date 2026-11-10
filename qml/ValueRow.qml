@@ -5,7 +5,7 @@ import QtQuick.Layouts
 SettingItem {
     id: root
     property string value
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
 
     implicitHeight: inGroup ? (touch ? 60 : 52) : 44
 

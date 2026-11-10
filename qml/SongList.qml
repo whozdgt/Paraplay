@@ -9,7 +9,7 @@ ListView {
     reuseItems: true
     boundsBehavior: Flickable.StopAtBounds
     readonly property bool compact: width < 560      // phone: title over artist, no quality column
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
 
     delegate: Rectangle {

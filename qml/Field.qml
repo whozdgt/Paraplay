@@ -11,10 +11,10 @@ Rectangle {
     function focusInput() { input.forceActiveFocus() }
     function clear() { input.text = "" }
 
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     implicitWidth: 200
     implicitHeight: 44
-    color: Qt.rgba(1, 1, 1, 0.85)
+    color: settings.round ? settings.field : Qt.rgba(1, 1, 1, 0.85); radius: settings.round ? 10 : 0
     border.width: 1
     border.color: input.activeFocus ? Qt.rgba(pri.r, pri.g, pri.b, 0.6) : Qt.rgba(0, 0, 0, 0.2)
 

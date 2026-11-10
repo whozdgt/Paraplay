@@ -7,7 +7,7 @@ Item {
     property bool resultOk: false
     property string resultText: ""
     signal closeRequested()
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property bool jelly: kind === "jellyfin"
 
     function reset() {
@@ -38,7 +38,7 @@ Item {
         anchors.centerIn: parent
         width: Math.min(460, root.width - 24)
         height: col.implicitHeight + 56
-        color: Qt.rgba(1, 1, 1, 0.93)
+        color: settings.round ? settings.surface : Qt.rgba(1, 1, 1, 0.93); radius: settings.round ? 18 : 0
         MouseArea { anchors.fill: parent }
         Column {
             id: col

@@ -8,7 +8,7 @@ Item {
     readonly property var pl: social.playlist
     readonly property var prof: social.profile
     readonly property bool ready: !!pl.id && pl.loading !== true && pl.missing !== true
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
     readonly property bool knownOwner: prof.username === pl.owner
     property bool saved: false

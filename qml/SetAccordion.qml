@@ -7,7 +7,7 @@ SettingItem {
     property bool open: false
     property color chip: "transparent"          // a small square of colour beside the arrow
     default property alias content: body.data
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property real headH: inGroup ? (touch ? 64 : 56) : (touch ? 56 : 48)
     readonly property real bleed: inGroup ? 12 : 0
 

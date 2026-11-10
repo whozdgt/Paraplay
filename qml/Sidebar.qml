@@ -10,10 +10,10 @@ Rectangle {
     signal sourceSelected(string id)       // "" = all sources, "local", or a server id
     signal addServerRequested()
     signal updateClicked()
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property bool hasServers: servers.count > 0
 
-    color: drawer ? settings.bgColor : Qt.rgba(1, 1, 1, 0.28)
+    color: drawer ? settings.ground : Qt.rgba(1, 1, 1, 0.28)
     Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Qt.rgba(1, 1, 1, 0.55) }
 
     Flickable {
@@ -60,7 +60,7 @@ Rectangle {
                     anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
                     width: Math.max(18, cnt.implicitWidth + 10); height: 18
                     color: settings.accent
-                    Text { id: cnt; anchors.centerIn: parent; text: social.requestCount; font.pixelSize: 11; color: "white" }
+                    Text { id: cnt; anchors.centerIn: parent; text: social.requestCount; font.pixelSize: 11; color: settings.onInk }
                 }
             }
             NavItem { width: parent.width; sub: true; text: "Songs"; active: root.view === "songs"; onClicked: root.select("songs") }
@@ -132,7 +132,7 @@ Rectangle {
                 text: "Update available · v" + updater.latest
                 elide: Text.ElideRight
                 font.pixelSize: 13
-                color: "white"
+                color: settings.onInk
             }
             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.updateClicked() }
         }

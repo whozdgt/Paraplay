@@ -74,7 +74,7 @@ Item {
             wrapMode: Text.Wrap
             lineHeight: 1.35
             font.pixelSize: 12
-            color: Qt.rgba(settings.primary.r, settings.primary.g, settings.primary.b, 0.72)
+            color: Qt.rgba(settings.ink.r, settings.ink.g, settings.ink.b, 0.72)
             text: "You aren't following anyone yet. Tap the person with a plus at the top right to find people."
         }
     }

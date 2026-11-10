@@ -5,16 +5,17 @@ Rectangle {
     id: root
     signal expand()
     readonly property bool compact: width < 560      // phone: cover, title, play/next and a thin progress line
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
 
     height: 64
-    color: settings.solid ? settings.boxHover : Qt.rgba(1, 1, 1, 0.5)
+    radius: settings.round ? height / 2 : 0           // Midnight: a frosted pill floating over the page
+    color: settings.glass
     border.width: 1
-    border.color: settings.solid ? settings.boxLine : Qt.rgba(1, 1, 1, 0.8)
+    border.color: settings.glassLine
 
     RowLayout {
-        anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
+        anchors { fill: parent; leftMargin: settings.round ? 12 : 10; rightMargin: settings.round ? 14 : 10 }
         spacing: 14
 
         Cover {
@@ -54,7 +55,7 @@ Rectangle {
         Row {
             spacing: 4
             IconButton { visible: !root.compact; name: "prev"; box: 36; onClicked: player.prev() }
-            IconButton { name: player.playing ? "pause" : "play"; box: 40; iconSize: 18; bg: root.pri; fg: "white"; onClicked: player.toggle() }
+            IconButton { name: player.playing ? "pause" : "play"; box: 40; iconSize: 18; bg: root.pri; fg: settings.onInk; onClicked: player.toggle() }
             IconButton { name: "next"; box: 36; onClicked: player.next() }
         }
         Progress { visible: !root.compact; Layout.preferredWidth: 200 }
@@ -62,9 +63,13 @@ Rectangle {
 
     Rectangle {     // phone: the song's progress as a thin line along the bottom
         visible: root.compact
-        anchors { left: parent.left; bottom: parent.bottom }
-        height: 3
-        width: parent.width * (player.duration > 0 ? Math.min(1, player.position / player.duration) : 0)
+        readonly property real inset: settings.round ? root.radius : 0
+        x: inset
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: settings.round ? 3 : 0
+        height: settings.round ? 2 : 3
+        radius: settings.round ? 1 : 0
+        width: (parent.width - 2 * inset) * (player.duration > 0 ? Math.min(1, player.position / player.duration) : 0)
         color: settings.accent
     }
 

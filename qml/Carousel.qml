@@ -14,7 +14,7 @@ Item {
     property bool jump: false              // true for a moment while fanning back out: no slide, just place it
     signal picked(string key, string name)
     clip: true
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property bool stacked: stackItem !== null
     readonly property var items: {
         if (!active) return []
@@ -190,7 +190,7 @@ Item {
         anchors.centerIn: parent
         width: Math.min(420, root.width - 24)
         height: 250
-        color: Qt.rgba(1, 1, 1, 0.95)
+        color: settings.surface; radius: settings.round ? 18 : 0
         MouseArea { anchors.fill: parent }
         DropArea {
             anchors.fill: parent
@@ -203,7 +203,7 @@ Item {
             Text { width: parent.width; wrapMode: Text.Wrap; font.pixelSize: 12; color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.72); text: "Drop an image file onto this box, or paste its path here." }
             Rectangle {
                 width: parent.width; height: 38
-                color: Qt.rgba(1, 1, 1, 0.8); border.width: 1; border.color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.3)
+                color: settings.field; radius: settings.round ? 10 : 0; border.width: 1; border.color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.3)
                 TextInput {
                     id: pathIn
                     anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
@@ -215,7 +215,7 @@ Item {
                 spacing: 8
                 Rectangle {
                     width: 90; height: 38; color: root.pri
-                    Text { anchors.centerIn: parent; text: "Apply"; color: "white"; font.pixelSize: 13 }
+                    Text { anchors.centerIn: parent; text: "Apply"; color: settings.onInk; font.pixelSize: 13 }
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { artistImages.setCustom(root.editName, pathIn.text); pathIn.text = ""; root.editName = "" } }
                 }
                 Rectangle {

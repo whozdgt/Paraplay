@@ -4,7 +4,7 @@ Item {
     id: root
     property bool creating: false
     signal closeRequested()
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property bool themed: settings.solid                 // phones, or frosted glass switched off: use the chosen colours
     readonly property color hint: themed ? Qt.rgba(pri.r, pri.g, pri.b, 0.5) : Qt.rgba(0, 0, 0, 0.5)
     readonly property color fieldFill: themed ? settings.boxFill : Qt.rgba(1, 1, 1, 0.85)
@@ -22,7 +22,7 @@ Item {
         anchors.centerIn: parent
         width: Math.min(420, root.width - 24)
         height: col.implicitHeight + 56
-        color: root.themed ? settings.bgColor : Qt.rgba(1, 1, 1, 0.93)
+        color: root.themed ? (settings.round ? settings.surface : settings.ground) : Qt.rgba(1, 1, 1, 0.93); radius: settings.round ? 22 : 0
         border.width: root.themed ? 1 : 0
         border.color: settings.boxLine
         MouseArea { anchors.fill: parent }

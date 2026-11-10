@@ -10,7 +10,7 @@ Item {
     signal openPlaylist(string pid, string name, string owner)
 
     property string tab: "activity"          // activity | find | requests
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
     readonly property bool signedIn: account.signedIn
 
@@ -290,7 +290,7 @@ Item {
             width: msg.implicitWidth + 28
             height: 34
             color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.92)
-            Text { id: msg; anchors.centerIn: parent; text: social.message; font.pixelSize: 12; color: "white" }
+            Text { id: msg; anchors.centerIn: parent; text: social.message; font.pixelSize: 12; color: settings.onInk }
         }
     }
 }

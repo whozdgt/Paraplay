@@ -17,13 +17,13 @@ Item {
         x: root.gut
         width: parent.width - 2 * root.gut
         height: Math.max(28, stripText.implicitHeight + 14)
-        color: settings.primary
+        color: settings.ink
         Text {
             id: stripText
             anchors { left: parent.left; leftMargin: 14; right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
             wrapMode: Text.Wrap
             font.pixelSize: 12
-            color: "white"
+            color: settings.onInk
             text: "Previewing your " + (account.visibility === "public" ? "Public" : "Private") + " profile as a stranger would see it. "
                   + (root.dirty ? "Unsaved changes are not shown yet." : "Nothing here can be changed.")
         }

@@ -10,7 +10,7 @@ Window {
     minimumHeight: android ? 0 : 520
     visible: true
     title: "Music"
-    color: opaque ? settings.bgColor : "transparent"     // phones and Windows can't blur what is behind the window
+    color: opaque || settings.round ? settings.ground : "transparent"     // phones and Windows can't blur what is behind the window
 
     readonly property bool android: settings.mobile
     readonly property bool opaque: android || Qt.platform.os === "windows"
@@ -54,7 +54,7 @@ Window {
     property string userBack: "home"        // where "back" goes from someone's profile
     property string profileMode: "edit"     // edit | preview (your own profile page)
     property string plBack: "friends"        // where "back" goes from a friend's playlist
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
 
     // Album-art glow: only while a song plays and "Adapt to album colours" is on.
@@ -134,7 +134,13 @@ Window {
     // The Home and Friends pages show what your friends are playing, so keep that fresh while one of them is open.
     readonly property bool watchSocial: account.signedIn && (view === "home" || view === "friends")
     onWatchSocialChanged: social.watch(watchSocial)
-    Component.onCompleted: social.watch(watchSocial)
+    Component.onCompleted: {
+        social.watch(watchSocial)
+        // --set startView=albums, startSettings=look, startExpanded=true: open on a given screen (for checking the interface)
+        if (settings.startView) navigate(settings.startView)
+        if (settings.startSettings) { settingsPanel.show(settings.startSettings); settingsOpen = true }
+        if (settings.startExpanded) expanded = true
+    }
 
     HomeLayout { id: homeLayout }
 
@@ -150,8 +156,8 @@ Window {
 
         Rectangle {
             anchors.fill: parent
-            color: (settings.frosted && !win.opaque) ? Qt.rgba(1, 1, 1, 0.58) : settings.bgColor
-            border.width: win.opaque ? 0 : 1
+            color: !settings.solid ? Qt.rgba(1, 1, 1, 0.58) : settings.ground
+            border.width: win.opaque || settings.round ? 0 : 1
             border.color: Qt.rgba(1, 1, 1, 0.75)
 
             Shape {
@@ -517,7 +523,7 @@ Window {
                 y: win.phone ? chips.y + chips.height + 4 : 72
                 width: 210
                 height: sortCol.implicitHeight
-                color: Qt.rgba(1, 1, 1, 0.94)
+                color: settings.surface; radius: settings.round ? 14 : 0
                 Column {
                     id: sortCol
                     Repeater {
@@ -550,7 +556,7 @@ Window {
                 y: win.srcY + 4
                 width: 240
                 height: srcCol.implicitHeight
-                color: Qt.rgba(1, 1, 1, 0.94)
+                color: settings.surface; radius: settings.round ? 14 : 0
                 Column {
                     id: srcCol
                     Repeater {
@@ -705,7 +711,7 @@ Window {
             y: Math.min(win.menuY, win.lh - height - 10)
             width: 260
             height: mcol.implicitHeight
-            color: Qt.rgba(1, 1, 1, 0.96)
+            color: settings.surface; radius: settings.round ? 14 : 0
             Column {
                 id: mcol
                 width: parent.width

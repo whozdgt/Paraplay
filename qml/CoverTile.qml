@@ -8,13 +8,14 @@ Rectangle {
     property string kind: "album"            // album | artist | playlist
 
     color: settings.solid ? settings.boxHover : Qt.rgba(1, 1, 1, 0.5)
+    radius: settings.round ? (root.kind === "artist" ? width / 2 : Math.min(18, Math.max(8, width * 0.07))) : 0
+    clip: false
 
-    Image {
+    RoundImage {
         visible: root.kind !== "artist"
         anchors.fill: parent
+        radius: root.radius
         source: root.entry ? (root.entry.art || "") : ""
-        asynchronous: true
-        fillMode: Image.PreserveAspectCrop
         sourceSize: Qt.size(400, 400)
     }
     ArtistPhoto {
@@ -25,8 +26,10 @@ Rectangle {
     Rectangle {
         visible: root.entry ? !!root.entry.remote : false
         anchors { right: parent.right; bottom: parent.bottom }
+        anchors.margins: settings.round ? 6 : 0
         width: 26
         height: 26
+        radius: settings.round ? 13 : 0
         color: Qt.rgba(0, 0, 0, 0.55)
         Icon { anchors.centerIn: parent; name: "cloud"; size: 15; color: "white" }
     }

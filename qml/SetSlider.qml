@@ -12,7 +12,7 @@ Item {
     readonly property bool pressed: ma.pressed
     signal moved(int v)                           // while dragging
     signal committed(int v)                       // when let go
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property real knob: settings.mobile ? 22 : 18
     readonly property real frac: maxValue > minValue ? Math.max(0, Math.min(1, (value - minValue) / (maxValue - minValue))) : 0
 
@@ -55,7 +55,7 @@ Item {
             anchors.centerIn: parent
             text: root.valueText !== "" ? root.valueText : String(root.value)
             font.pixelSize: 12
-            color: settings.solid ? settings.bgColor : "white"
+            color: settings.solid ? settings.ground : "white"
         }
     }
     MouseArea {

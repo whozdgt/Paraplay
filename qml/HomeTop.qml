@@ -6,7 +6,7 @@ Item {
     property bool compact: false
     signal openArtist(string name)
     readonly property int tile: compact ? 112 : 140
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
     readonly property var artists: { stats.revision; return stats.topArtists(settings.homeTop === "all" ? 0 : 28, 12) }
     implicitHeight: col.implicitHeight

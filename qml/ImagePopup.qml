@@ -5,7 +5,7 @@ Item {
     id: root
     property string kind: "avatar"                 // avatar | banner
     readonly property bool isBanner: kind === "banner"
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
     property string chosen: ""                     // file:// URL of the picked file
     property string note: ""
@@ -53,7 +53,7 @@ Item {
         anchors.centerIn: parent
         width: Math.min(460, root.width - 24)
         height: content.implicitHeight + 40
-        color: Qt.rgba(1, 1, 1, 0.94)
+        color: settings.surface; radius: settings.round ? 18 : 0
         MouseArea { anchors.fill: parent }
 
         Column {
@@ -121,7 +121,7 @@ Item {
             Rectangle {
                 visible: !settings.mobile
                 width: parent.width; height: 40
-                color: Qt.rgba(1, 1, 1, 0.8); border.width: 1
+                color: settings.field; radius: settings.round ? 10 : 0; border.width: 1
                 border.color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.3)
                 TextInput {
                     id: pathIn

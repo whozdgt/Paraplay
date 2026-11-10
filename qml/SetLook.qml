@@ -4,12 +4,63 @@ import QtQuick.Layouts
 // Settings › Look: size, window, colours, lyrics and pictures, cover art.
 ColumnLayout {
     id: root
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
 
     spacing: 0
 
     SetGroup {
         first: true
+        title: "Theme"
+        section: "Look"
+        SetBlock {
+            label: "Theme"
+            keywords: "theme midnight classic dark black style look rounded"
+            Text {
+                Layout.fillWidth: true; wrapMode: Text.Wrap; font.pixelSize: 12; lineHeight: 1.3
+                color: Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.72)
+                text: "Midnight is pure black with everything in your accent colour, rounded covers and floating glass bars. Classic uses your own background and text colours, with square corners."
+            }
+            Flow {
+                Layout.fillWidth: true
+                spacing: 12
+                Repeater {
+                    model: [{ k: "midnight", t: "Midnight", bg: "#000000", fg: settings.accent, r: 10 },
+                            { k: "classic", t: "Classic", bg: settings.bgColor.toString(), fg: settings.primary.toString(), r: 0 }]
+                    Rectangle {
+                        id: themeCard
+                        required property var modelData
+                        readonly property bool on: settings.theme === modelData.k
+                        width: 150; height: 104
+                        radius: settings.round ? 16 : 0
+                        color: modelData.bg
+                        border.width: on ? 3 : 1
+                        border.color: on ? settings.accent : Qt.rgba(root.pri.r, root.pri.g, root.pri.b, 0.25)
+                        Accessible.role: Accessible.RadioButton
+                        Accessible.name: modelData.t
+                        Accessible.checked: on
+                        Accessible.onPressAction: settings.theme = modelData.k
+                        Column {
+                            x: 14; y: 14; spacing: 6
+                            Text { text: themeCard.modelData.t; font.pixelSize: 15; font.weight: Font.Bold; color: themeCard.modelData.fg }
+                            Row {
+                                spacing: 6
+                                Rectangle { width: 26; height: 26; radius: themeCard.modelData.r * 0.6; color: settings.accent }
+                                Column {
+                                    spacing: 5; anchors.verticalCenter: parent.verticalCenter
+                                    Rectangle { width: 70; height: 6; radius: themeCard.modelData.r > 0 ? 3 : 0; color: themeCard.modelData.fg; opacity: 0.9 }
+                                    Rectangle { width: 46; height: 6; radius: themeCard.modelData.r > 0 ? 3 : 0; color: themeCard.modelData.fg; opacity: 0.5 }
+                                }
+                            }
+                            Rectangle { width: 120; height: 18; radius: themeCard.modelData.r > 0 ? 9 : 0; color: themeCard.modelData.k === "midnight" ? Qt.rgba(0.17, 0.17, 0.19, 1) : Qt.rgba(0, 0, 0, 0.06) }
+                        }
+                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: settings.theme = themeCard.modelData.k }
+                    }
+                }
+            }
+        }
+    }
+
+    SetGroup {
         title: "Interface"
         section: "Look"
         SliderRow {
@@ -35,7 +86,7 @@ ColumnLayout {
         title: "Window"
         section: "Look"
         ToggleRow {
-            available: Qt.platform.os === "linux"
+            available: Qt.platform.os === "linux" && !settings.round
             label: "Frosted glass"
             note: "Blurs what is behind the window"
             keywords: "blur transparent translucent"

@@ -9,7 +9,7 @@ Rectangle {
     property bool open: true
     property bool dim: false
     signal clicked()
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
 
     height: sub ? 36 : 40
     color: active ? (settings.solid ? settings.hiSel : Qt.rgba(1, 1, 1, 0.65)) : (ma.containsMouse && !dim ? (settings.solid ? settings.hiHover : Qt.rgba(1, 1, 1, 0.3)) : "transparent")

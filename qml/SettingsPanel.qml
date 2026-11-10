@@ -18,7 +18,7 @@ Rectangle {
     readonly property bool compact: width < 500        // a phone: one column. The computer's panel is 540 wide, so it keeps the list on the left
     readonly property bool searching: String(settings.settingsQuery).trim() !== ""
     readonly property bool showList: compact && !pageOpen && !searching
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
     readonly property bool touch: settings.mobile
     readonly property var cats: [
@@ -94,7 +94,7 @@ Rectangle {
     }
     Component.onCompleted: { shownCat = cat; shownList = showList }
 
-    color: compact ? settings.bgColor : Qt.rgba(1, 1, 1, 0.85)
+    color: compact ? settings.ground : (settings.round ? settings.surface : Qt.rgba(1, 1, 1, 0.85)); radius: compact || !settings.round ? 0 : 22
     MouseArea { anchors.fill: parent }   // clicks inside must not reach the close-overlay
 
     // ---- computer: the sections down the left

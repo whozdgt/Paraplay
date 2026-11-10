@@ -4,7 +4,7 @@ import QtQuick.Layouts
 // Settings › About: the version and updates.
 ColumnLayout {
     id: root
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
 
     spacing: 0

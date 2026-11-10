@@ -7,7 +7,8 @@ Rectangle {
     property bool accent: false
     implicitWidth: lbl.implicitWidth + (accent ? 22 : 16)
     implicitHeight: 22
-    color: settings.solid ? settings.boxHover : Qt.rgba(1, 1, 1, 0.85)
-    Rectangle { visible: root.accent; width: 3; height: parent.height; color: settings.accent }
-    Text { id: lbl; anchors.centerIn: parent; text: root.text; font.pixelSize: 11; color: settings.primary }
+    radius: settings.round ? height / 2 : 0
+    color: settings.round ? settings.chipFill : settings.solid ? settings.boxHover : Qt.rgba(1, 1, 1, 0.85)
+    Rectangle { visible: root.accent && !settings.round; width: 3; height: parent.height; color: settings.accent }
+    Text { id: lbl; anchors.centerIn: parent; text: root.text; font.pixelSize: 11; color: settings.ink }
 }

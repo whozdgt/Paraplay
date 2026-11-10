@@ -9,6 +9,8 @@ Item {
     property bool spinning: false
     property real hoverScale: 1
     readonly property real labelRatio: 0.95 - settings.ringCount * 0.095   // fewer rings = bigger cover art
+    // Midnight rounds the corners: a little for a thumbnail, more for a big cover
+    property real radius: settings.round ? Math.min(22, Math.max(8, width * 0.08)) : 0
     signal clicked()
     width: 44
     height: 44
@@ -51,12 +53,12 @@ Item {
         Rectangle {
             anchors.fill: parent
             visible: !root.record
+            radius: root.radius
             color: settings.solid ? settings.boxHover : Qt.rgba(1, 1, 1, 0.5)
-            Image {
+            RoundImage {
                 anchors.fill: parent
+                radius: root.radius
                 source: root.source
-                asynchronous: true
-                fillMode: Image.PreserveAspectCrop
                 sourceSize: Qt.size(Math.max(128, root.width * 3), Math.max(128, root.width * 3))
             }
         }

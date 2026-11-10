@@ -8,7 +8,7 @@ Rectangle {
     property bool request: false
     property bool compact: false
     signal opened()
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
     readonly property bool live: !!root.person.live
     readonly property bool recent: !live && (root.person.title || "") !== ""

@@ -8,7 +8,7 @@ Rectangle {
     property bool small: false
     default property alias actions: acts.data
     signal opened()
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
 
     height: small ? 52 : 62
     color: ma.containsMouse ? (settings.solid ? settings.boxHover : Qt.rgba(1, 1, 1, 0.55)) : (settings.solid ? settings.boxFill : Qt.rgba(1, 1, 1, 0.35))

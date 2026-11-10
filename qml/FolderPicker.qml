@@ -8,7 +8,7 @@ Item {
     property string path: ""               // "" = the list of storage places
     signal chosen(string dir)
     signal cancelled()
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
     readonly property var entries: path === "" ? folders.roots() : folders.list(path)
     readonly property int songs: path === "" ? 0 : folders.audioCount(path)
@@ -22,7 +22,7 @@ Item {
         width: Math.min(520, root.width - 24)
         height: Math.min(640, root.height - 48)
         anchors.centerIn: parent
-        color: Qt.rgba(1, 1, 1, 0.97)
+        color: settings.round ? settings.surface : Qt.rgba(1, 1, 1, 0.97)
         MouseArea { anchors.fill: parent }
 
         ColumnLayout {

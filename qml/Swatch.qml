@@ -32,7 +32,7 @@ Item {
         width: face.width + 8; height: width
         color: "transparent"
         border.width: 2
-        border.color: settings.primary
+        border.color: settings.ink
     }
     MouseArea { id: ma; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.picked() }
 }

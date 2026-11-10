@@ -9,7 +9,7 @@ Flickable {
     readonly property var p: social.profile
     readonly property bool ready: !!p.id && p.loading !== true && p.missing !== true
     readonly property bool anyCount: p.followers >= 0 || p.following >= 0 || p.playlistCount >= 0
-    readonly property color pri: settings.primary
+    readonly property color pri: settings.ink
     readonly property color muted: Qt.rgba(pri.r, pri.g, pri.b, 0.72)
     readonly property bool compact: col.width < 560      // phone: buttons go under the name instead of beside it
     property string menu: ""              // "" | "main" | "report"
@@ -93,7 +93,8 @@ Flickable {
                     id: frame
                     y: -34
                     width: 84; height: 84
-                    color: "white"
+                    radius: settings.round ? 42 : 0
+                    color: settings.round ? settings.ground : "white"
                     Avatar { anchors.fill: parent; anchors.margins: 4; source: root.p.avatar || "" }
                 }
                 Column {
@@ -136,7 +137,7 @@ Flickable {
                     anchors { right: parent.right; top: actionsRow.bottom; topMargin: 6 }
                     width: 250
                     height: menuCol.implicitHeight
-                    color: Qt.rgba(1, 1, 1, 0.97)
+                    color: settings.surface; radius: settings.round ? 14 : 0
                     Column {
                         id: menuCol
                         width: parent.width

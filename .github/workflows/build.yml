@@ -45,3 +45,39 @@ jobs:
             echo "::warning::The interface printed errors while loading (see log)"
             exit 1
           fi
+
+      # Pictures of the interface, made in a virtual screen with a small made-up library. A hint for reviewing changes,
+      # never a reason to fail the build. Open the run and download "screenshots" under Artifacts.
+      - name: Screenshots
+        continue-on-error: true
+        run: |
+          pm="pacman"
+          pacman --help 2>&1 | grep -q -- --disable-sandbox && pm="pacman --disable-sandbox"
+          $pm -S --noconfirm --needed xorg-server-xvfb mesa ffmpeg ttf-jetbrains-mono > /dev/null
+          bash .github/scripts/demo-music.sh /tmp/music > /dev/null
+          mkdir -p shots
+          shot() {      # shot <name> <WxH> [options…]
+            local name="$1" size="$2"; shift 2
+            QT_QPA_PLATFORM=xcb timeout 40 xvfb-run -a -s "-screen 0 1600x1000x24" \
+              ./build/musicplayer --music /tmp/music --size "$size" --screenshot "shots/$name.png" "$@" > "shots/$name.log" 2>&1 || true
+            ls -l "shots/$name.png" 2>/dev/null || { echo "::warning::no screenshot for $name"; tail -5 "shots/$name.log"; }
+          }
+          shot phone-home 390x844 --mobile
+          shot phone-albums 390x844 --mobile --set startView=albums
+          shot phone-songs 390x844 --mobile --set startView=songs
+          shot phone-settings-look 390x844 --mobile --set startSettings=look
+          shot phone-player 390x844 --mobile --set startExpanded=true
+          shot desktop-home 1280x800
+          shot desktop-songs 1280x800 --set startView=songs
+          shot desktop-settings 1280x800 --set startSettings=look
+          shot desktop-classic 1280x800 --set theme=classic --set startView=songs
+          grep -h -E "(qrc:|qml).*(rror|is not a type|ReferenceError|TypeError|Cannot assign|Unable to assign)" shots/*.log | sort -u | head -20 || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: shots/
+          retention-days: 7
+          if-no-files-found: ignore
+
