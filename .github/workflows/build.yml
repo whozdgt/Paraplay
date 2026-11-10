@@ -66,7 +66,11 @@ jobs:
           shot phone-albums 390x844 --mobile --set startView=albums
           shot phone-songs 390x844 --mobile --set startView=songs
           shot phone-settings-look 390x844 --mobile --set startSettings=look
-          shot phone-player 390x844 --mobile --set startExpanded=true
+          shot phone-player 390x844 --mobile --set startPlay=true --set startExpanded=true
+          shot phone-library 390x844 --mobile --set startView=library
+          shot phone-album 390x844 --mobile --set "startAlbum=Night Drive"
+          shot phone-playing 390x844 --mobile --set startPlay=true --set startView=library
+          shot phone-classic 390x844 --mobile --set theme=classic
           shot desktop-home 1280x800
           shot desktop-songs 1280x800 --set startView=songs
           shot desktop-settings 1280x800 --set startSettings=look

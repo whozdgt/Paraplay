@@ -6,7 +6,8 @@ Rectangle {
     readonly property color pri: settings.ink
 
     implicitHeight: settings.mobile ? 48 : 40
-    color: settings.solid ? settings.boxFill : Qt.rgba(1, 1, 1, 0.6)
+    color: settings.round ? settings.field : settings.solid ? settings.boxFill : Qt.rgba(1, 1, 1, 0.6)
+    radius: settings.round ? height / 2 : 0
     border.width: input.activeFocus ? 2 : 1
     border.color: input.activeFocus ? settings.accent : Qt.rgba(pri.r, pri.g, pri.b, 0.3)
 

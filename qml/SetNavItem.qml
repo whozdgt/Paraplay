@@ -10,15 +10,16 @@ Rectangle {
     readonly property color pri: settings.ink
 
     height: 44
+    radius: settings.round ? 22 : 0
     Accessible.role: Accessible.PageTab
     Accessible.name: text
     Accessible.selected: active
     Accessible.onPressAction: root.clicked()
-    color: active ? (settings.solid ? settings.hiSel : Qt.rgba(1, 1, 1, 0.65))
+    color: active && settings.round ? Qt.rgba(1, 1, 1, 0.12) : active ? (settings.solid ? settings.hiSel : Qt.rgba(1, 1, 1, 0.65))
                   : Qt.rgba(pri.r, pri.g, pri.b, ma.pressed ? 0.10 : (ma.containsMouse ? 0.06 : 0))
     Behavior on color { ColorAnimation { duration: 150 } }
 
-    Rectangle { visible: root.active; width: 3; height: parent.height; color: settings.accent }
+    Rectangle { visible: root.active && !settings.round; width: 3; height: parent.height; color: settings.accent }
     Row {
         x: 14
         anchors.verticalCenter: parent.verticalCenter

@@ -161,6 +161,19 @@ Window {
         if (settings.startView) navigate(settings.startView)
         if (settings.startSettings) { settingsPanel.show(settings.startSettings); settingsOpen = true }
         if (settings.startExpanded) expanded = true
+        if (settings.startAlbum || settings.startPlay) startTimer.start()
+    }
+    Timer {      // --set startAlbum=<name> / startPlay=true: wait for the scan, then open that album or play the first song
+        id: startTimer
+        interval: 1800
+        onTriggered: {
+            if (settings.startAlbum) {
+                const list = library.groups("album")
+                for (let i = 0; i < list.length; ++i)
+                    if (list[i].name === settings.startAlbum) { win.pick("album", list[i].key, list[i].name, phone ? "library" : "albums"); break }
+            }
+            if (settings.startPlay) player.playRow(0)
+        }
     }
 
     HomeLayout { id: homeLayout }
